@@ -1,0 +1,8 @@
+---
+description: 
+globs: src/fsrs/**/*.ts
+alwaysApply: false
+---
+算法介绍可以参考 [ABC-of-FSRS.md](mdc:docs/ABC-of-FSRS.md)
+算法的实现严格遵守 [The-Algorithm.md](mdc:docs/The-Algorithm.md)
+

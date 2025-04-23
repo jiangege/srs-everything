@@ -1,0 +1,6 @@
+---
+description: 
+globs: *.test.ts
+alwaysApply: false
+---
+使用 vitest 实现单元测试，确保清晰
