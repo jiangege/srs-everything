@@ -1,3 +1,3 @@
 import * as fsrs from "./fsrs/index.js";
-
-export { fsrs };
+import * as ir from "./ir/index.js";
+export { fsrs, ir };

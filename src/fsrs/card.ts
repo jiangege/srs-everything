@@ -29,7 +29,7 @@ export function createCard(
 export function grade(
   card: Card,
   rating: RatingValue,
-  log: ReviewLog,
+  log: Pick<ReviewLog, "reviewTime" | "duration">,
   fsrsParams: number[] = DEFAULT_PARAMS_FSRS5
 ): Card {
   const newCard = { ...card };
@@ -62,7 +62,12 @@ export function grade(
 
   newCard.due = log.reviewTime + newCard.scheduledDays * 24 * 60 * 60 * 1000;
 
-  newCard.reviewLogs = reviewLog.addReviewLog(card.reviewLogs, log);
+  newCard.reviewLogs = reviewLog.addReviewLog(card.reviewLogs, {
+    ...log,
+    id: newCard.id,
+    state: newCard.state,
+    rating,
+  });
 
   return newCard;
 }

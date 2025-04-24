@@ -16,10 +16,10 @@ export enum CardState {
 
 export interface ReviewLog {
   id: string;
-  state: CardState;
   reviewTime: number;
   rating: RatingValue;
-  duration: number;
+  state: CardState;
+  duration?: number;
 }
 
 export interface Card {
