@@ -1,36 +1,22 @@
-import { Card, CardState, ReviewLog, Rating } from "./types.js";
-import { DEFAULT_DESIRED_RETENTION, DEFAULT_PARAMS_FSRS5 } from "./const.js";
-
-import * as algorithm from "./algorithm/index.js";
-import * as reviewLog from "../reviewLog.js";
-
-export const createCard = (
-  id: string,
-  customProperties?: Readonly<Partial<Card>>
-): Card => {
-  const defaultCard: Card = {
-    id,
-    due: null,
-    state: CardState.NEW,
-    difficulty: 0,
-    stability: 0,
-    elapsedDays: 0,
-    scheduledDays: 0,
-    lastReview: null,
-    currentRetention: 0,
-    desiredRetention: DEFAULT_DESIRED_RETENTION,
-    postpones: 0,
-    reviewLogs: [],
-  };
-  return { ...defaultCard, ...customProperties };
-};
+import {
+  DEFAULT_PARAMS_FSRS5,
+  Rating,
+  ReviewLog as FsrsReviewLog,
+  CardState,
+  algorithm,
+  reviewLog,
+} from "./fsrs/index.js";
+import { Card, CardType } from "./types.js";
 
 export const grade = (
   card: Card,
   rating: Rating,
-  log: Readonly<Pick<ReviewLog, "reviewTime" | "duration">>,
+  log: Readonly<Pick<FsrsReviewLog, "reviewTime" | "duration">>,
   params: readonly number[] = DEFAULT_PARAMS_FSRS5
 ): Readonly<Card> => {
+  if (card.type !== CardType.FSRS) {
+    throw new Error("Card is not a FSRS card");
+  }
   const newCard = { ...card };
   const { difficulty: newDifficulty, stability: newStability } =
     algorithm.stability.updateStability(
@@ -70,18 +56,20 @@ export const grade = (
     }),
   ];
 
-  return newCard;
+  return { ...newCard };
 };
 
 export const predictRatingIntervals = (
   card: Card,
   params: readonly number[] = DEFAULT_PARAMS_FSRS5
 ): Readonly<Record<Rating, number>> => {
+  if (card.type !== CardType.FSRS) {
+    throw new Error("Card is not a FSRS card");
+  }
+
   const result: Partial<Record<Rating, number>> = {};
 
-  // For each possible rating (Again, Hard, Good, Easy)
   for (const rating of [Rating.AGAIN, Rating.HARD, Rating.GOOD, Rating.EASY]) {
-    // Calculate what the new stability would be with this rating
     const { stability: newStability } = algorithm.stability.updateStability(
       card.difficulty,
       card.stability,
@@ -90,7 +78,6 @@ export const predictRatingIntervals = (
       params
     );
 
-    // Calculate what the next interval would be with the new stability
     const scheduledDays = algorithm.retrievability.nextInterval(
       card.desiredRetention,
       newStability

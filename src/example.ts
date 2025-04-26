@@ -2,9 +2,11 @@
 
 // const card = fsrs.createCard("dwwd");
 
-// const newCard = fsrs.grade(card, fsrs.Rating.AGAIN, {
-//   reviewTime: Date.now(),
-// });
+// // const newCard = fsrs.grade(card, fsrs.Rating.AGAIN, {
+// //   reviewTime: Date.now(),
+// // });
+
+// console.log(fsrs.predictRatingIntervals(card));
 
 // console.log(card, newCard);
 
@@ -34,11 +36,19 @@
 // srs.getFinalDrillQueue()
 
 // pipe(srs.importCards(), srs.grade(cardm 1))
+// import { CardType } from "./types.js";
+// import * as SRS from "./srs.js";
+
+// const card = SRS.createCard("dwwd", CardType.IR);
+
+// console.log(card);
+
+// console.log(SRS.getDueCards([card], Date.now()));
+
 import { CardType } from "./types.js";
-import * as SRS from "./srs.js";
 
-const card = SRS.createCard("dwwd", CardType.IR);
+import { addCard } from "./card.js";
 
-console.log(card);
+const [cards, card] = addCard([], "1", CardType.FSRS, 50);
 
-console.log(SRS.getDueCards([card], Date.now()));
+console.log(cards, card);

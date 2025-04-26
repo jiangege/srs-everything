@@ -5,8 +5,6 @@ export enum Rating {
   EASY = 4,
 }
 
-export type RatingValue = (typeof Rating)[keyof typeof Rating];
-
 export enum CardState {
   NEW = 0,
   LEARNING = 1,
@@ -17,7 +15,7 @@ export enum CardState {
 export interface ReviewLog {
   id: string;
   reviewTime: number;
-  rating: RatingValue;
+  rating: Rating;
   state: CardState;
   duration?: number;
 }
@@ -25,7 +23,6 @@ export interface ReviewLog {
 export interface Card {
   id: string;
   due: number | null;
-  priority: number;
   state: CardState;
   difficulty: number;
   stability: number;

@@ -1,23 +1,30 @@
-export enum CardState {
-  NEW = 0,
-  LEARNING = 1,
+export enum Comprehension {
+  /** Not opened yet */
+  Unread = 0,
+  /** Skimmed / browsed */
+  Browsed = 1,
+  /** Partially understood */
+  Partial = 2,
+  /** Fully understood */
+  Mastered = 3,
 }
 
-export interface Card {
-  id: string;
-  due: number | null;
-  priority: number;
-  state: CardState;
-  elapsedDays: number;
-  scheduledDays: number;
-  lastReview: number | null;
-  postpones: number;
-  reviewLogs: ReviewLog[];
+export enum ActionType {
+  Skip = 0,
+  Partial = 1,
+  Done = 2,
+  Extract = 3,
 }
 
-export interface ReviewLog {
-  id: string;
-  reviewTime: number;
-  state: CardState;
-  duration?: number;
+export interface ActionSkip {
+  type: ActionType.Skip;
 }
+export interface ActionPartial {
+  type: ActionType.Partial;
+  comp: Comprehension;
+}
+export interface ActionDone {
+  type: ActionType.Done;
+}
+
+export type ReadingAction = ActionSkip | ActionPartial | ActionDone;

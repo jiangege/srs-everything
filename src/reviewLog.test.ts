@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
-import { addReviewLog, deleteReviewLog } from "./reviewLog.js";
-import { CardState, Rating } from "./types.js";
+import { appendReviewLog, withoutReviewLog } from "./reviewLog.js";
+import { CardState, Rating } from "./fsrs/types.js";
 
 describe("reviewLog", () => {
   describe("addReviewLog", () => {
@@ -14,7 +14,7 @@ describe("reviewLog", () => {
         duration: 10,
       };
 
-      const result = addReviewLog(reviewLogs, newLog);
+      const result = appendReviewLog(reviewLogs, newLog);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(newLog);
@@ -41,7 +41,7 @@ describe("reviewLog", () => {
         duration: 10,
       };
 
-      const result = addReviewLog(reviewLogs, newLog);
+      const result = appendReviewLog(reviewLogs, newLog);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual(existingLog);
@@ -71,7 +71,7 @@ describe("reviewLog", () => {
 
       const reviewLogs = [log1, log2];
 
-      const result = deleteReviewLog(reviewLogs, "log1");
+      const result = withoutReviewLog(reviewLogs, "log1");
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(log2);
@@ -90,7 +90,7 @@ describe("reviewLog", () => {
 
       const reviewLogs = [log1];
 
-      const result = deleteReviewLog(reviewLogs, "nonexistent");
+      const result = withoutReviewLog(reviewLogs, "nonexistent");
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(log1);
@@ -100,7 +100,7 @@ describe("reviewLog", () => {
 
     test("should handle empty arrays", () => {
       const reviewLogs = [];
-      const result = deleteReviewLog(reviewLogs, "log1");
+      const result = withoutReviewLog(reviewLogs, "log1");
 
       expect(result).toHaveLength(0);
       expect(result).not.toBe(reviewLogs);
