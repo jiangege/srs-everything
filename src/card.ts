@@ -1,7 +1,7 @@
+import { produce } from "immer";
 import { Card, CardType, CardState, FsrsCard, IrCard } from "./types.js";
 import { setPriority } from "./priority.js";
 import { DEFAULT_DESIRED_RETENTION } from "./fsrs/const.js";
-
 import { appendReviewLog } from "./reviewLog.js";
 import { Comprehension } from "./ir/types.js";
 
@@ -29,25 +29,21 @@ export const addCard = (
       }),
     ],
   };
+
   switch (type) {
     case CardType.FSRS:
-      newCard = { ...baseCard } as FsrsCard;
+      newCard = baseCard as FsrsCard;
       newCard.difficulty = 0;
       newCard.stability = 0;
       newCard.currentRetention = 0;
       newCard.desiredRetention = DEFAULT_DESIRED_RETENTION;
       break;
     case CardType.IR:
-      newCard = { ...baseCard } as IrCard;
+      newCard = baseCard as IrCard;
       newCard.comp = Comprehension.Unread;
       break;
   }
 
-  const [cardsWithPriority, cardWithPriority] = setPriority(
-    [...cards, newCard],
-    id,
-    priority
-  );
-
-  return [cardsWithPriority, cardWithPriority];
+  const [result, _] = setPriority([...cards, newCard], id, priority);
+  return [result, result.find((card) => card.id === id)!];
 };

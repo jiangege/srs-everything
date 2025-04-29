@@ -49,6 +49,12 @@ import { CardType } from "./types.js";
 
 import { addCard } from "./card.js";
 
-const [cards, card] = addCard([], "1", CardType.FSRS, 50);
+const [cards, card] = addCard([], "9999", CardType.FSRS, 50);
 
-console.log(cards, card);
+const [cards2, card2] = addCard(cards, "1d2iuiu", CardType.FSRS, 50);
+
+const [cards3, card3] = addCard(cards2, "1d3iuiu", CardType.FSRS, 50);
+
+const [cards4, card4] = addCard(cards3, "44iuiu", CardType.FSRS, 50);
+
+console.log(cards4);

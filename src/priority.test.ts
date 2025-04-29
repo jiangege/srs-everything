@@ -30,13 +30,20 @@ describe("setPriority", () => {
     const targetId = "card-3";
     const newPriority = 75;
 
-    const result = setPriority(cards, targetId, newPriority);
+    const [result, jitteredPriority] = setPriority(
+      cards,
+      targetId,
+      newPriority
+    );
 
     // Find the updated card
     const updatedCard = result.find((c) => c.id === targetId);
     expect(updatedCard).toBeDefined();
     expect(updatedCard?.priority).toBeGreaterThanOrEqual(newPriority);
     expect(updatedCard?.priority).toBeLessThan(newPriority + 1); // Less than newPriority + jitter max
+
+    // Verify jitteredPriority matches the card's priority
+    expect(updatedCard?.priority).toBe(jitteredPriority);
   });
 
   test("should sort cards by priority", () => {
@@ -44,7 +51,7 @@ describe("setPriority", () => {
     const targetId = "card-1"; // First card
     const newPriority = 99; // Move to end
 
-    const result = setPriority(cards, targetId, newPriority);
+    const [result] = setPriority(cards, targetId, newPriority);
 
     // Check sorting
     for (let i = 1; i < result.length; i++) {
@@ -54,7 +61,7 @@ describe("setPriority", () => {
 
   test("should update position values correctly", () => {
     const cards = createTestCards(5);
-    const result = setPriority(cards, "card-2", 80);
+    const [result] = setPriority(cards, "card-2", 80);
 
     // Check positions match index
     result.forEach((card, index) => {
@@ -66,13 +73,13 @@ describe("setPriority", () => {
     const cards = createTestCards(3);
 
     // Test with priority = 0
-    let result = setPriority(cards, "card-1", 0);
+    let [result] = setPriority(cards, "card-1", 0);
     expect(
       result.find((c) => c.id === "card-1")?.priority
     ).toBeGreaterThanOrEqual(0);
 
     // Test with priority = 100
-    result = setPriority(cards, "card-2", 100);
+    [result] = setPriority(cards, "card-2", 100);
     expect(
       result.find((c) => c.id === "card-2")?.priority
     ).toBeGreaterThanOrEqual(100);
@@ -90,12 +97,30 @@ describe("setPriority", () => {
       return acc;
     }, {} as Record<string, number>);
 
-    const result = setPriority(cards, "card-3", 50);
+    const [result] = setPriority(cards, "card-3", 50);
 
     // Check other cards maintain their priorities
     Object.entries(originalPriorities).forEach(([id, priority]) => {
       const card = result.find((c) => c.id === id);
       expect(card?.priority).toBe(priority);
     });
+  });
+
+  test("should return the jittered priority as second tuple element", () => {
+    const cards = createTestCards(3);
+    const targetId = "card-2";
+    const newPriority = 60;
+
+    const [result, jitteredPriority] = setPriority(
+      cards,
+      targetId,
+      newPriority
+    );
+    const updatedCard = result.find((c) => c.id === targetId);
+
+    expect(jitteredPriority).toBeDefined();
+    expect(jitteredPriority).toBeGreaterThanOrEqual(newPriority);
+    expect(jitteredPriority).toBeLessThan(newPriority + 1);
+    expect(updatedCard?.priority).toBe(jitteredPriority);
   });
 });
