@@ -45,16 +45,42 @@
 
 // console.log(SRS.getDueCards([card], Date.now()));
 
-import { CardType, CardState, FsrsCard, Rating } from "./types.js";
+import { CardType, CardState, FsrsCard, Comprehension } from "./types.js";
 
-import { createCard } from "./card.js";
+import { Rating } from "./fsrs/index.js";
+
+import { createCard, computeForgettingCurve } from "./card.js";
 import { applyPriority } from "./priority.js";
-import { grade } from "./grade.js";
+import { next } from "./read.js";
+import { grade, predictRatingIntervals } from "./grade.js";
+import { addDays } from "./utils/dateHelper.js";
 
-const card = createCard("9999", CardType.FSRS, 50);
+const card = createCard("9999", CardType.IR, 50);
 
-const updateCard = grade(card, Rating.EASY, {
-  reviewTime: Date.now(),
-});
+console.log("card", card);
 
-console.log(applyPriority(updateCard, 80));
+let lastCard = card;
+
+for (let i = 0; i < 10; i++) {
+  const newCard = next(lastCard, lastCard.due ?? Date.now(), {
+    MULTIPLIER: 2.5,
+  });
+  console.log(
+    i,
+    new Date(newCard.lastReview ?? Date.now()).toLocaleString(),
+    new Date(newCard.due ?? Date.now()).toLocaleString()
+  );
+  lastCard = newCard;
+}
+
+// const card2 = createCard("98888", CardType.FSRS, 50);
+
+// const updateCard3 = grade(card2, Rating.HARD, Date.now());
+
+// console.log(updateCard3);
+
+// const updateCard = grade(card, Rating.HARD, Date.now());
+
+// const updateCard2 = grade(updateCard, Rating.GOOD, addDays(Date.now(), 1));
+
+// console.log(computeForgettingCurve(updateCard, Date.now()));

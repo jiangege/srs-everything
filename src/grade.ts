@@ -1,75 +1,88 @@
-import { DEFAULT_PARAMS_FSRS5, algorithm } from "./fsrs/index.js";
-import { Card, FsrsCard, CardState, ReviewLog, Rating } from "./types.js";
+import { DEFAULT_PARAMS_FSRS5, algorithm, Rating } from "./fsrs/index.js";
+import { Card, FsrsCard, CardState, ReviewLog } from "./types.js";
+import { msToDays } from "./utils/dateHelper.js";
 
 import { appendReviewLog } from "./reviewLog.js";
 
+export const computeElapsedDays = (
+  card: Readonly<FsrsCard>,
+  reviewTime: number
+): number => {
+  return card.lastReview ? msToDays(reviewTime - card.lastReview) : 0;
+};
+
 export const grade = (
-  card: Readonly<Card>,
+  card: Readonly<FsrsCard>,
   rating: Rating,
-  log: Readonly<Partial<ReviewLog>>,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
-): Readonly<Card> => {
-  const originalCard = card as FsrsCard;
-  const newCard = { ...card } as FsrsCard;
+  reviewTime: number,
+  log?: Readonly<Partial<ReviewLog>>,
+  params?: typeof DEFAULT_PARAMS_FSRS5
+): Readonly<FsrsCard> => {
+  const newCard = { ...card };
+
+  const elapsedDays = computeElapsedDays(card, reviewTime);
+
   const { difficulty: newDifficulty, stability: newStability } =
     algorithm.stability.updateStability(
-      originalCard.difficulty,
-      originalCard.stability,
-      originalCard.elapsedDays,
+      card.difficulty,
+      card.stability,
+      elapsedDays,
       rating,
       params
     );
 
-  if (rating === Rating.AGAIN) {
-    if (originalCard.state === CardState.REVIEW) {
+  if (rating < Rating.GOOD) {
+    if (card.state > CardState.LEARNING) {
       newCard.state = CardState.RELEARNING;
+    } else {
+      newCard.state = CardState.LEARNING;
     }
   } else {
     newCard.state = CardState.REVIEW;
   }
+
   newCard.difficulty = newDifficulty;
   newCard.stability = newStability;
 
   newCard.scheduledDays = algorithm.retrievability.nextInterval(
-    originalCard.desiredRetention,
+    card.desiredRetention,
     newStability
   );
 
   newCard.currentRetention = algorithm.retrievability.forgettingCurve(
-    originalCard.elapsedDays,
+    elapsedDays,
     newCard.stability
   );
 
-  newCard.elapsedDays = 0;
-
-  if (typeof log.reviewTime === "number") {
-    newCard.lastReview = log.reviewTime;
-    newCard.due = log.reviewTime + newCard.scheduledDays * 24 * 60 * 60 * 1000;
-    newCard.reviewLogs = [
-      ...appendReviewLog(originalCard.reviewLogs, {
-        ...log,
-        id: newCard.id,
-        state: newCard.state,
-        rating,
-        reviewTime: log.reviewTime,
-      }),
-    ];
-  }
+  newCard.lastReview = reviewTime;
+  newCard.due = reviewTime + newCard.scheduledDays * 24 * 60 * 60 * 1000;
+  newCard.reviewLogs = [
+    ...appendReviewLog(card.reviewLogs, {
+      ...log,
+      id: newCard.id,
+      state: newCard.state,
+      rating,
+      reviewTime,
+    }),
+  ];
 
   return { ...newCard };
 };
 
 export const predictRatingIntervals = (
   card: FsrsCard,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  reviewTime: number,
+  params?: typeof DEFAULT_PARAMS_FSRS5
 ): Readonly<Record<Rating, number>> => {
   const result: Partial<Record<Rating, number>> = {};
+
+  const elapsedDays = computeElapsedDays(card, reviewTime);
 
   for (const rating of [Rating.AGAIN, Rating.HARD, Rating.GOOD, Rating.EASY]) {
     const { stability: newStability } = algorithm.stability.updateStability(
       card.difficulty,
       card.stability,
-      card.elapsedDays,
+      elapsedDays,
       rating,
       params
     );

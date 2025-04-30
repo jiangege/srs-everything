@@ -1,14 +1,9 @@
-import {
-  Card,
-  CardType,
-  CardState,
-  FsrsCard,
-  IrCard,
-  Comprehension,
-} from "./types.js";
+import { Card, CardType, CardState, IrCard } from "./types.js";
 import { applyPriority } from "./priority.js";
 import { DEFAULT_DESIRED_RETENTION } from "./fsrs/const.js";
 import { appendReviewLog } from "./reviewLog.js";
+import { msToDays } from "./utils/dateHelper.js";
+import { algorithm as fsrsAlgorithm } from "./fsrs/index.js";
 
 export const createCard = (
   id: string,
@@ -21,7 +16,6 @@ export const createCard = (
     type,
     due: null,
     state: CardState.NEW,
-    elapsedDays: 0,
     scheduledDays: 0,
     lastReview: null,
     postpones: 0,
@@ -39,15 +33,24 @@ export const createCard = (
       newCard = baseCard as FsrsCard;
       newCard.difficulty = 0;
       newCard.stability = 0;
-      newCard.currentRetention = 0;
       newCard.desiredRetention = DEFAULT_DESIRED_RETENTION;
       break;
     case CardType.IR:
       newCard = baseCard as IrCard;
-      newCard.comp = Comprehension.Unread;
       break;
   }
 
   const updatedCard = applyPriority(newCard, priority);
   return updatedCard;
+};
+
+export const computeForgettingCurve = (
+  card: Readonly<FsrsCard>,
+  now: number
+): number => {
+  const elapsedDays = card.lastReview ? msToDays(now - card.lastReview) : 0;
+  return fsrsAlgorithm.retrievability.forgettingCurve(
+    elapsedDays,
+    card.stability
+  );
 };

@@ -1,5 +1,3 @@
-export const DEFAULT_PARAMS_IR = {
-  baseSteps: [1, 2, 4],
-  baseGrowthFactor: 0.5,
-  basePriorityFactor: 0.5,
+export const IR_PARAMS = {
+  MULTIPLIER: 1.5,
 };
