@@ -1,72 +1,68 @@
-import {
-  DEFAULT_PARAMS_FSRS5,
-  Rating,
-  ReviewLog as FsrsReviewLog,
-  CardState,
-  algorithm,
-  reviewLog,
-} from "./fsrs/index.js";
-import { Card, CardType } from "./types.js";
+import { DEFAULT_PARAMS_FSRS5, algorithm } from "./fsrs/index.js";
+import { Card, FsrsCard, CardState, ReviewLog, Rating } from "./types.js";
+
+import { appendReviewLog } from "./reviewLog.js";
 
 export const grade = (
-  card: Card,
+  card: Readonly<Card>,
   rating: Rating,
-  log: Readonly<Pick<FsrsReviewLog, "reviewTime" | "duration">>,
+  log: Readonly<Partial<ReviewLog>>,
   params: readonly number[] = DEFAULT_PARAMS_FSRS5
 ): Readonly<Card> => {
-  if (card.type !== CardType.FSRS) {
-    throw new Error("Card is not a FSRS card");
-  }
-  const newCard = { ...card };
+  const originalCard = card as FsrsCard;
+  const newCard = { ...card } as FsrsCard;
   const { difficulty: newDifficulty, stability: newStability } =
     algorithm.stability.updateStability(
-      card.difficulty,
-      card.stability,
-      card.elapsedDays,
+      originalCard.difficulty,
+      originalCard.stability,
+      originalCard.elapsedDays,
       rating,
       params
     );
 
-  newCard.state = CardState.LEARNING;
+  if (rating === Rating.AGAIN) {
+    if (originalCard.state === CardState.REVIEW) {
+      newCard.state = CardState.RELEARNING;
+    }
+  } else {
+    newCard.state = CardState.REVIEW;
+  }
   newCard.difficulty = newDifficulty;
   newCard.stability = newStability;
 
   newCard.scheduledDays = algorithm.retrievability.nextInterval(
-    card.desiredRetention,
+    originalCard.desiredRetention,
     newStability
   );
 
-  newCard.lastReview = log.reviewTime;
-
   newCard.currentRetention = algorithm.retrievability.forgettingCurve(
-    card.elapsedDays,
+    originalCard.elapsedDays,
     newCard.stability
   );
 
   newCard.elapsedDays = 0;
 
-  newCard.due = log.reviewTime + newCard.scheduledDays * 24 * 60 * 60 * 1000;
-
-  newCard.reviewLogs = [
-    ...reviewLog.appendReviewLog(card.reviewLogs, {
-      ...log,
-      id: newCard.id,
-      state: newCard.state,
-      rating,
-    }),
-  ];
+  if (typeof log.reviewTime === "number") {
+    newCard.lastReview = log.reviewTime;
+    newCard.due = log.reviewTime + newCard.scheduledDays * 24 * 60 * 60 * 1000;
+    newCard.reviewLogs = [
+      ...appendReviewLog(originalCard.reviewLogs, {
+        ...log,
+        id: newCard.id,
+        state: newCard.state,
+        rating,
+        reviewTime: log.reviewTime,
+      }),
+    ];
+  }
 
   return { ...newCard };
 };
 
 export const predictRatingIntervals = (
-  card: Card,
+  card: FsrsCard,
   params: readonly number[] = DEFAULT_PARAMS_FSRS5
 ): Readonly<Record<Rating, number>> => {
-  if (card.type !== CardType.FSRS) {
-    throw new Error("Card is not a FSRS card");
-  }
-
   const result: Partial<Record<Rating, number>> = {};
 
   for (const rating of [Rating.AGAIN, Rating.HARD, Rating.GOOD, Rating.EASY]) {

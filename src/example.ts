@@ -45,16 +45,16 @@
 
 // console.log(SRS.getDueCards([card], Date.now()));
 
-import { CardType } from "./types.js";
+import { CardType, CardState, FsrsCard, Rating } from "./types.js";
 
-import { addCard } from "./card.js";
+import { createCard } from "./card.js";
+import { applyPriority } from "./priority.js";
+import { grade } from "./grade.js";
 
-const [cards, card] = addCard([], "9999", CardType.FSRS, 50);
+const card = createCard("9999", CardType.FSRS, 50);
 
-const [cards2, card2] = addCard(cards, "1d2iuiu", CardType.FSRS, 50);
+const updateCard = grade(card, Rating.EASY, {
+  reviewTime: Date.now(),
+});
 
-const [cards3, card3] = addCard(cards2, "1d3iuiu", CardType.FSRS, 50);
-
-const [cards4, card4] = addCard(cards3, "44iuiu", CardType.FSRS, 50);
-
-console.log(cards4);
+console.log(applyPriority(updateCard, 80));

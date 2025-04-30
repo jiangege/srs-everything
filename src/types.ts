@@ -1,4 +1,4 @@
-import { Rating } from "./fsrs/types.js";
+import { Rating } from "./fsrs/index.js";
 import { Comprehension } from "./ir/types.js";
 
 export enum CardType {
@@ -7,10 +7,10 @@ export enum CardType {
 }
 
 export enum CardState {
-  NEW = "new",
-  LEARNING = "learning",
-  REVIEW = "review",
-  DONE = "done",
+  NEW = 0,
+  LEARNING = 1,
+  REVIEW = 2,
+  RELEARNING = 3,
 }
 
 export interface BaseCard {
@@ -47,3 +47,5 @@ export interface IrCard extends BaseCard {
 }
 
 export type Card = FsrsCard | IrCard;
+
+export { Rating, Comprehension };

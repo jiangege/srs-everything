@@ -9,7 +9,7 @@ export enum CardState {
   NEW = 0,
   LEARNING = 1,
   REVIEW = 2,
-  DONE = 3,
+  RELEARNING = 3,
 }
 
 export interface ReviewLog {

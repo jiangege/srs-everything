@@ -1,16 +1,20 @@
-import { produce } from "immer";
-import { Card, CardType, CardState, FsrsCard, IrCard } from "./types.js";
-import { setPriority } from "./priority.js";
+import {
+  Card,
+  CardType,
+  CardState,
+  FsrsCard,
+  IrCard,
+  Comprehension,
+} from "./types.js";
+import { applyPriority } from "./priority.js";
 import { DEFAULT_DESIRED_RETENTION } from "./fsrs/const.js";
 import { appendReviewLog } from "./reviewLog.js";
-import { Comprehension } from "./ir/types.js";
 
-export const addCard = (
-  cards: readonly Card[],
+export const createCard = (
   id: string,
   type: CardType,
   priority: number
-): readonly [readonly Card[], Card] => {
+): Readonly<Card> => {
   let newCard: Card;
   const baseCard: Partial<Card> = {
     id,
@@ -44,6 +48,6 @@ export const addCard = (
       break;
   }
 
-  const [result, _] = setPriority([...cards, newCard], id, priority);
-  return [result, result.find((card) => card.id === id)!];
+  const updatedCard = applyPriority(newCard, priority);
+  return updatedCard;
 };
