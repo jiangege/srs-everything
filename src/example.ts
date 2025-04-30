@@ -62,9 +62,7 @@ console.log("card", card);
 let lastCard = card;
 
 for (let i = 0; i < 10; i++) {
-  const newCard = next(lastCard, lastCard.due ?? Date.now(), {
-    MULTIPLIER: 2.5,
-  });
+  const newCard = next(lastCard, lastCard.due ?? Date.now());
   console.log(
     i,
     new Date(newCard.lastReview ?? Date.now()).toLocaleString(),
@@ -72,6 +70,10 @@ for (let i = 0; i < 10; i++) {
   );
   lastCard = newCard;
 }
+
+const d = (1 / 0.3 - 1) / (1 / 0.9 - 1) - 1;
+
+console.log(d);
 
 // const card2 = createCard("98888", CardType.FSRS, 50);
 

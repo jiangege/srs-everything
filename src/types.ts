@@ -40,3 +40,12 @@ export interface FsrsCard extends BaseCard {
 export interface IrCard extends BaseCard {}
 
 export type Card = FsrsCard | IrCard;
+
+export interface OutstandingQueueOptions {
+  maxNewItem: number;
+  maxNewTopic: number;
+  itemPriorityWeight: number;
+  topicPriorityWeight: number;
+  maxItemPerDay: number;
+  maxTopicPerDay: number;
+}
