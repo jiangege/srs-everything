@@ -41,11 +41,13 @@ export interface IrCard extends BaseCard {}
 
 export type Card = FsrsCard | IrCard;
 
-export interface OutstandingQueueOptions {
+export interface OutstandingQueueParams {
   maxNewItem: number;
   maxNewTopic: number;
-  itemPriorityWeight: number;
-  topicPriorityWeight: number;
+  itemPriorityVsRandRatio: number;
+  topicPriorityVsRandRatio: number;
   maxItemPerDay: number;
   maxTopicPerDay: number;
+  topicVsItemRatio: number;
+  oddsVsPriorityRandRatio: number;
 }

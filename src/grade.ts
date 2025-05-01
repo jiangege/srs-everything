@@ -1,15 +1,7 @@
 import { DEFAULT_PARAMS_FSRS5, algorithm, Rating } from "./fsrs/index.js";
 import { Card, FsrsCard, CardState, ReviewLog } from "./types.js";
-import { msToDays } from "./utils/dateHelper.js";
-
 import { appendReviewLog } from "./reviewLog.js";
-
-export const computeElapsedDays = (
-  card: Readonly<FsrsCard>,
-  reviewTime: number
-): number => {
-  return card.lastReview ? msToDays(reviewTime - card.lastReview) : 0;
-};
+import { computeElapsedDays } from "./utils/cardHelper.js";
 
 export const grade = (
   card: Readonly<FsrsCard>,

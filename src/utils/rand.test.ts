@@ -1,6 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { jitter } from "./rand.js";
 import { seededRandom } from "./rand";
+import { mulberry32 } from "./rand";
 
 describe("jitter", () => {
   test("should produce expected hash values for known inputs", () => {
@@ -13,33 +14,46 @@ describe("jitter", () => {
   });
 });
 
-/**
- * Tests for the seededRandom function
- */
-describe("seededRandom", () => {
-  it("returns the same value for the same seed", () => {
-    const seed = 12345;
-    const result1 = seededRandom(seed);
-    const result2 = seededRandom(seed);
+// Test the mulberry32 random number generator
+describe("mulberry32", () => {
+  it("should generate random numbers between 0 and 1", () => {
+    const rng = mulberry32(42); // Using 42 as a seed
 
-    expect(result1).toBe(result2);
+    // Generate 5 random numbers
+    const numbers = Array(5)
+      .fill(0)
+      .map(() => rng());
+
+    // Each number should be between 0 and 1
+    numbers.forEach((num) => {
+      expect(num).toBeGreaterThanOrEqual(0);
+      expect(num).toBeLessThan(1);
+    });
   });
 
-  it("returns a value between 0 and 1", () => {
-    const seed = 67890;
-    const result = seededRandom(seed);
+  it("should generate the same sequence when using the same seed", () => {
+    const rng1 = mulberry32(123);
+    const rng2 = mulberry32(123);
 
-    expect(result).toBeGreaterThanOrEqual(0);
-    expect(result).toBeLessThan(1);
+    // Both generators should produce the same sequence
+    for (let i = 0; i < 10; i++) {
+      expect(rng1()).toEqual(rng2());
+    }
   });
 
-  it("returns different values for different seeds", () => {
-    const seed1 = 12345;
-    const seed2 = 67890;
+  it("should generate different sequences when using different seeds", () => {
+    const rng1 = mulberry32(123);
+    const rng2 = mulberry32(456);
 
-    const result1 = seededRandom(seed1);
-    const result2 = seededRandom(seed2);
+    // At least one number in the sequence should be different
+    let allSame = true;
+    for (let i = 0; i < 10; i++) {
+      if (rng1() !== rng2()) {
+        allSame = false;
+        break;
+      }
+    }
 
-    expect(result1).not.toBe(result2);
+    expect(allSame).toBe(false);
   });
 });
