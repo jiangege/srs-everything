@@ -1,14 +1,17 @@
-import { Card, CardType, CardState, IrCard } from "./types.js";
+import { Card, CardType, CardState, IrCard, FsrsCard } from "./types.js";
 import { applyPriority } from "./priority.js";
-import { DEFAULT_DESIRED_RETENTION } from "./fsrs/const.js";
 import { appendReviewLog } from "./reviewLog.js";
 import { msToDays } from "./utils/dateHelper.js";
-import { algorithm as fsrsAlgorithm } from "./fsrs/index.js";
+import {
+  algorithm as fsrsAlgorithm,
+  DEFAULT_DESIRED_RETENTION,
+} from "./fsrs/index.js";
 
 export const createCard = (
   id: string,
   type: CardType,
-  priority: number
+  priority: number,
+  defaultAttrs?: Partial<Card>
 ): Readonly<Card> => {
   let newCard: Card;
   const baseCard: Partial<Card> = {
@@ -26,15 +29,20 @@ export const createCard = (
         reviewTime: Date.now(),
       }),
     ],
+    ...defaultAttrs,
   };
 
   switch (type) {
-    case CardType.FSRS:
-      newCard = baseCard as FsrsCard;
-      newCard.difficulty = 0;
-      newCard.stability = 0;
-      newCard.desiredRetention = DEFAULT_DESIRED_RETENTION;
+    case CardType.FSRS: {
+      const fsrsCard = baseCard as FsrsCard;
+      fsrsCard.difficulty = 0;
+      fsrsCard.stability = 0;
+      newCard = fsrsCard;
+      if (fsrsCard.desiredRetention === undefined) {
+        fsrsCard.desiredRetention = DEFAULT_DESIRED_RETENTION;
+      }
       break;
+    }
     case CardType.IR:
       newCard = baseCard as IrCard;
       break;

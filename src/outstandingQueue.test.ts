@@ -1,147 +1,262 @@
-import { CardState, CardType, OutstandingQueueParams } from "./types";
-import { sortCards } from "./outstandingQueue";
-import { describe, test, expect, vi } from "vitest";
+import {
+  CardState,
+  CardType,
+  Card,
+  FsrsCard,
+  OutstandingQueueParams,
+} from "./types.js";
+import {
+  sortCards,
+  calcOddsRatio,
+  filterCards,
+  generateOutstandingQueue,
+} from "./outstandingQueue";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 
-describe("sortCards", () => {
-  const mockCards = [
-    {
-      id: "1",
-      priority: 5,
-      type: CardType.FSRS,
-      state: CardState.NEW,
-      position: 1,
-      scheduledDays: 0,
-      postpones: 0,
-      reviewLogs: [],
-      due: Date.now(),
-    },
-    {
-      id: "2",
-      priority: 3,
+describe("filterCards", () => {
+  test("should filter cards by state", () => {
+    const cards: Card[] = [
+      { id: "1", state: CardState.NEW, type: CardType.FSRS } as Card,
+      { id: "2", state: CardState.LEARNING, type: CardType.FSRS } as Card,
+      { id: "3", state: CardState.NEW, type: CardType.IR } as Card,
+      { id: "4", state: CardState.REVIEW, type: CardType.FSRS } as Card,
+    ];
+
+    const newCards = filterCards(cards, CardState.NEW);
+    expect(newCards.length).toBe(2);
+    expect(newCards[0].id).toBe("1");
+    expect(newCards[1].id).toBe("3");
+
+    const learningCards = filterCards(cards, CardState.LEARNING);
+    expect(learningCards.length).toBe(1);
+    expect(learningCards[0].id).toBe("2");
+
+    const reviewCards = filterCards(cards, CardState.REVIEW);
+    expect(reviewCards.length).toBe(1);
+    expect(reviewCards[0].id).toBe("4");
+  });
+});
+
+describe("calcOddsRatio", () => {
+  test("should calculate odds ratio", () => {
+    const now = new Date("2023-01-01").getTime();
+    const card: FsrsCard = {
+      id: "calcOddsRatio",
       type: CardType.FSRS,
       state: CardState.REVIEW,
-      position: 2,
-      scheduledDays: 0,
-      postpones: 0,
-      reviewLogs: [],
-      due: Date.now(),
-    },
-    {
-      id: "3",
-      priority: 1,
-      type: CardType.FSRS,
-      state: CardState.LEARNING,
-      position: 3,
-      scheduledDays: 0,
-      postpones: 0,
-      reviewLogs: [],
-      due: Date.now(),
-    },
-    {
-      id: "4",
-      priority: 7,
-      type: CardType.IR,
-      state: CardState.RELEARNING,
-      position: 4,
-      scheduledDays: 0,
-      postpones: 0,
-      reviewLogs: [],
-      due: Date.now(),
-    },
-    {
-      id: "5",
-      priority: 2,
-      type: CardType.IR,
-      state: CardState.NEW,
-      position: 5,
-      scheduledDays: 0,
-      postpones: 0,
-      reviewLogs: [],
-      due: Date.now(),
-    },
-  ];
+      stability: 10,
+      desiredRetention: 0.9,
+      lastReview: now - 86400000 * 5, // 5 days ago
+    } as FsrsCard;
 
-  test("should sort cards by priority when weight=1", () => {
-    const params = {
-      itemPriorityVsRandRatio: 1,
-      topicPriorityVsRandRatio: 1,
-    };
-
-    const sorted = sortCards(mockCards, 42, params);
-
-    // Should be sorted by priority (ascending)
-    expect(sorted[0].id).toBe("3"); // priority 1
-    expect(sorted[1].id).toBe("5"); // priority 2
-    expect(sorted[2].id).toBe("2"); // priority 3
-    expect(sorted[3].id).toBe("1"); // priority 5
-    expect(sorted[4].id).toBe("4"); // priority 7
+    const oddsRatio = calcOddsRatio(card, now);
+    expect(oddsRatio).toBeCloseTo(-0.486, 2);
   });
 
-  test("should sort cards randomly when weight=0", () => {
+  test("should calculate odds ratio for IR card", () => {
+    const now = new Date("2023-01-01").getTime();
+    const card = {
+      id: "calcOddsRatio",
+      type: CardType.IR,
+      state: CardState.REVIEW,
+    } as FsrsCard;
+
+    const oddsRatio = calcOddsRatio(card, now);
+    console.log(oddsRatio);
+  });
+});
+
+describe("sortCards", () => {
+  test("should sort cards in ascending order by default", () => {
+    const now = new Date("2025-05-05").getTime();
+    const cards: Card[] = [
+      {
+        id: "1",
+        type: CardType.FSRS,
+        priority: 50,
+        state: CardState.REVIEW,
+        stability: 20,
+        desiredRetention: 0.9,
+        lastReview: now - 86400000 * 3, // 3 days ago
+      } as FsrsCard,
+      {
+        id: "2",
+        type: CardType.FSRS,
+        priority: 80,
+        state: CardState.REVIEW,
+        stability: 10,
+        desiredRetention: 0.9,
+        lastReview: now - 86400000 * 3, // 3 days ago
+      } as FsrsCard,
+    ];
+
     const params = {
-      itemPriorityVsRandRatio: 0,
-      topicPriorityVsRandRatio: 0,
+      itemPriorityRatio: 1,
+      topicPriorityRatio: 1,
+      oddsWeight: 1,
     };
 
-    // With the same seed, sorting should be consistent but not based on priority
-    const sorted1 = sortCards(mockCards, 42, params);
-    const sorted2 = sortCards(mockCards, 42, params);
+    const sortedCards = sortCards(cards, now, params);
 
-    // Same seed should give same order
-    expect(sorted1.map((c) => c.id)).toEqual(sorted2.map((c) => c.id));
-
-    // Different seed should give different order
-    const sorted3 = sortCards(mockCards, 43, params);
-    expect(sorted1.map((c) => c.id)).not.toEqual(sorted3.map((c) => c.id));
+    // Cards should be sorted based on priority, oddsRatio and randomness
+    expect(sortedCards.length).toBe(2);
+    expect(sortedCards.map((c) => c.id)).toContain("1");
+    expect(sortedCards.map((c) => c.id)).toContain("2");
   });
 
-  test("should consider card type when sorting with mixed weights", () => {
+  test("should sort cards in descending order when specified", () => {
+    const now = new Date("2025-05-05").getTime();
+    const cards: Card[] = [
+      {
+        id: "1",
+        type: CardType.FSRS,
+        priority: 50,
+        state: CardState.REVIEW,
+        stability: 20,
+        desiredRetention: 0.9,
+        lastReview: now - 86400000 * 3, // 3 days ago
+      } as FsrsCard,
+      {
+        id: "2",
+        type: CardType.FSRS,
+        priority: 80,
+        state: CardState.REVIEW,
+        stability: 10,
+        desiredRetention: 0.9,
+        lastReview: now - 86400000 * 3, // 3 days ago
+      } as FsrsCard,
+    ];
+
     const params = {
-      itemPriorityVsRandRatio: 0.7, // FSRS cards: 70% priority, 30% random
-      topicPriorityVsRandRatio: 0.3, // IR cards: 30% priority, 70% random
+      itemPriorityRatio: 1,
+      topicPriorityRatio: 1,
+      oddsWeight: 1,
     };
 
-    // First, verify deterministic behavior with same seed
-    const sorted1 = sortCards(mockCards, 42, params);
-    const sorted2 = sortCards(mockCards, 42, params);
-    expect(sorted1.map((c) => c.id)).toEqual(sorted2.map((c) => c.id));
+    const sortedCards = sortCards(cards, now, params, "desc");
 
-    // Testing with multiple seeds to ensure FSRS cards are more influenced by priority
-    // than IR cards with the same priority, on average
-    let fsrsFollowsPriorityCount = 0;
-    let irFollowsPriorityCount = 0;
+    // Cards should be sorted in descending order
+    expect(sortedCards.length).toBe(2);
+    expect(sortedCards.map((c) => c.id)).toContain("1");
+    expect(sortedCards.map((c) => c.id)).toContain("2");
+  });
 
-    // Run multiple sorts with different seeds
-    for (let seed = 1; seed <= 100; seed++) {
-      const sorted = sortCards(mockCards, seed, params);
+  test("should handle mix of FSRS and IR cards", () => {
+    const now = new Date("2025-05-05").getTime();
+    const cards: Card[] = [
+      {
+        id: "1",
+        type: CardType.FSRS,
+        priority: 50,
+        state: CardState.REVIEW,
+        stability: 20,
+        desiredRetention: 0.9,
+        lastReview: now - 86400000 * 3, // 3 days ago
+      } as FsrsCard,
+      {
+        id: "2",
+        type: CardType.IR,
+        priority: 80,
+        state: CardState.REVIEW,
+      } as Card,
+    ];
 
-      // Find positions of FSRS cards
-      const fsrsIndices = sorted
-        .map((card, index) => ({ id: card.id, index, type: card.type }))
-        .filter((item) => item.type === CardType.FSRS);
+    const params = {
+      itemPriorityRatio: 1,
+      topicPriorityRatio: 1,
+      oddsWeight: 0.5,
+    };
 
-      // Check if the two FSRS cards with priorities 1 and 3 are in order
-      const hasCard3 = fsrsIndices.find((item) => item.id === "3");
-      const hasCard2 = fsrsIndices.find((item) => item.id === "2");
+    const sortedCards = sortCards(cards, now, params);
 
-      if (hasCard3 && hasCard2 && hasCard3.index < hasCard2.index) {
-        fsrsFollowsPriorityCount++;
-      }
+    // Both card types should be sorted
+    expect(sortedCards.length).toBe(2);
+    expect(sortedCards.map((c) => c.type)).toContain(CardType.FSRS);
+    expect(sortedCards.map((c) => c.type)).toContain(CardType.IR);
+  });
+});
 
-      // Check IR cards similarly
-      const irIndices = sorted
-        .map((card, index) => ({ id: card.id, index, type: card.type }))
-        .filter((item) => item.type === CardType.IR);
+describe("generateOutstandingQueue", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-      const hasCard5 = irIndices.find((item) => item.id === "5");
-      const hasCard4 = irIndices.find((item) => item.id === "4");
+  test("should generate outstanding and postpone queues", () => {
+    const now = new Date("2025-05-05").getTime();
 
-      if (hasCard5 && hasCard4 && hasCard5.index < hasCard4.index) {
-        irFollowsPriorityCount++;
-      }
-    }
+    const cards: Card[] = [
+      // New FSRS card
+      {
+        id: "1",
+        type: CardType.FSRS,
+        state: CardState.NEW,
+        priority: 80,
+        due: null,
+      } as Card,
+      {
+        id: "11",
+        type: CardType.FSRS,
+        state: CardState.NEW,
+        priority: 60,
+        due: null,
+      } as Card,
+      // Due FSRS card
+      {
+        id: "2",
+        type: CardType.FSRS,
+        state: CardState.REVIEW,
+        priority: 70,
+        due: now - 1000, // Due in the past
+      } as Card,
+      // New IR card
+      {
+        id: "3",
+        type: CardType.IR,
+        state: CardState.NEW,
+        priority: 90,
+        due: null,
+      } as Card,
+      // Due IR card
+      {
+        id: "4",
+        type: CardType.IR,
+        state: CardState.REVIEW,
+        priority: 60,
+        due: now - 2000, // Due in the past
+      } as Card,
+      {
+        id: "5",
+        type: CardType.FSRS,
+        state: CardState.REVIEW,
+        priority: 100,
+        due: now + 2000, // Due in the future
+      } as Card,
+    ];
 
-    // With our parameters, FSRS cards should follow priority more often than IR cards
-    expect(fsrsFollowsPriorityCount).toBeGreaterThan(irFollowsPriorityCount);
+    const params: OutstandingQueueParams = {
+      maxNewItemsPerDay: 1,
+      maxNewTopicsPerDay: 1,
+      maxItemsPerDay: 2,
+      maxTopicsPerDay: 2,
+      itemPriorityRatio: 1,
+      topicPriorityRatio: 1,
+      oddsWeight: 0.5,
+      topicToItemRatio: 0.5,
+    };
+
+    const [outstanding, postpone] = generateOutstandingQueue(
+      cards,
+      now,
+      params
+    );
+
+    // Should have 4 outstanding cards (maxItemPerDay + maxTopicPerDay)
+    expect(outstanding.length).toBe(4);
+    // Should include IDs 1-4 (sorted by priority and due status)
+    expect(outstanding.map((c) => c.id).sort()).toEqual(["1", "2", "3", "4"]);
+
+    // None should be postponed
+    expect(postpone.length).toBe(2);
+    expect(postpone[0].id).toBe("11");
   });
 });

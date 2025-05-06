@@ -41,11 +41,6 @@ export const grade = (
     newStability
   );
 
-  newCard.currentRetention = algorithm.retrievability.forgettingCurve(
-    elapsedDays,
-    newCard.stability
-  );
-
   newCard.lastReview = reviewTime;
   newCard.due = reviewTime + newCard.scheduledDays * 24 * 60 * 60 * 1000;
   newCard.reviewLogs = [

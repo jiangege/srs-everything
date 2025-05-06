@@ -1,3 +1,5 @@
+import { Rating } from "./fsrs/index.js";
+
 export enum CardType {
   FSRS = "fsrs",
   IR = "ir",
@@ -18,6 +20,7 @@ export interface BaseCard {
   priority: number;
   position: number;
   scheduledDays: number;
+  maxScheduledDays: number;
   lastReview: number | null;
   postpones: number;
   reviewLogs: ReviewLog[];
@@ -42,12 +45,12 @@ export interface IrCard extends BaseCard {}
 export type Card = FsrsCard | IrCard;
 
 export interface OutstandingQueueParams {
-  maxNewItem: number;
-  maxNewTopic: number;
-  itemPriorityVsRandRatio: number;
-  topicPriorityVsRandRatio: number;
-  maxItemPerDay: number;
-  maxTopicPerDay: number;
-  topicVsItemRatio: number;
-  oddsVsPriorityRandRatio: number;
+  maxNewItemsPerDay: number;
+  maxNewTopicsPerDay: number;
+  itemPriorityRatio: number;
+  topicPriorityRatio: number;
+  maxItemsPerDay: number;
+  maxTopicsPerDay: number;
+  topicToItemRatio: number;
+  oddsWeight: number;
 }
