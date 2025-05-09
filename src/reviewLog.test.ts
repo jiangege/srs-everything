@@ -8,9 +8,9 @@ describe("reviewLog", () => {
       const reviewLogs = [];
       const newLog = {
         id: "log1",
-        state: CardState.NEW,
+        state: CardState.New,
         reviewTime: Date.now(),
-        rating: Rating.GOOD,
+        rating: Rating.Good,
         duration: 10,
       };
 
@@ -25,9 +25,9 @@ describe("reviewLog", () => {
     test("should add a new log to an existing array", () => {
       const existingLog = {
         id: "log1",
-        state: CardState.NEW,
+        state: CardState.New,
         reviewTime: Date.now() - 1000,
-        rating: Rating.GOOD,
+        rating: Rating.Good,
         duration: 5,
       };
 
@@ -35,9 +35,9 @@ describe("reviewLog", () => {
 
       const newLog = {
         id: "log2",
-        state: CardState.LEARNING,
+        state: CardState.Learning,
         reviewTime: Date.now(),
-        rating: Rating.EASY,
+        rating: Rating.Easy,
         duration: 10,
       };
 
@@ -55,17 +55,17 @@ describe("reviewLog", () => {
     test("should delete a log when it exists", () => {
       const log1 = {
         id: "log1",
-        state: CardState.NEW,
+        state: CardState.New,
         reviewTime: Date.now() - 1000,
-        rating: Rating.GOOD,
+        rating: Rating.Good,
         duration: 5,
       };
 
       const log2 = {
         id: "log2",
-        state: CardState.LEARNING,
+        state: CardState.Learning,
         reviewTime: Date.now(),
-        rating: Rating.EASY,
+        rating: Rating.Easy,
         duration: 10,
       };
 
@@ -82,9 +82,9 @@ describe("reviewLog", () => {
     test("should return the original array when log id doesn't exist", () => {
       const log1 = {
         id: "log1",
-        state: CardState.NEW,
+        state: CardState.New,
         reviewTime: Date.now(),
-        rating: Rating.GOOD,
+        rating: Rating.Good,
         duration: 5,
       };
 

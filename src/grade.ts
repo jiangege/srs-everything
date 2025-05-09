@@ -1,15 +1,15 @@
 import { DEFAULT_PARAMS_FSRS5, algorithm, Rating } from "./fsrs/index.js";
-import { Card, FsrsCard, CardState, ReviewLog } from "./types.js";
+import { ItemCard, CardState, ReviewLog } from "./types.js";
 import { appendReviewLog } from "./reviewLog.js";
-import { computeElapsedDays } from "./utils/cardHelper.js";
+import { computeElapsedDays } from "./card.js";
 
 export const grade = (
-  card: Readonly<FsrsCard>,
+  card: Readonly<ItemCard>,
   rating: Rating,
   reviewTime: number,
   log?: Readonly<Partial<ReviewLog>>,
   params?: typeof DEFAULT_PARAMS_FSRS5
-): Readonly<FsrsCard> => {
+): Readonly<ItemCard> => {
   const newCard = { ...card };
 
   const elapsedDays = computeElapsedDays(card, reviewTime);
@@ -23,14 +23,14 @@ export const grade = (
       params
     );
 
-  if (rating < Rating.GOOD) {
-    if (card.state > CardState.LEARNING) {
-      newCard.state = CardState.RELEARNING;
+  if (rating < Rating.Good) {
+    if (card.state > CardState.Learning) {
+      newCard.state = CardState.ReLearning;
     } else {
-      newCard.state = CardState.LEARNING;
+      newCard.state = CardState.Learning;
     }
   } else {
-    newCard.state = CardState.REVIEW;
+    newCard.state = CardState.Review;
   }
 
   newCard.difficulty = newDifficulty;
@@ -57,7 +57,7 @@ export const grade = (
 };
 
 export const predictRatingIntervals = (
-  card: FsrsCard,
+  card: ItemCard,
   reviewTime: number,
   params?: typeof DEFAULT_PARAMS_FSRS5
 ): Readonly<Record<Rating, number>> => {
@@ -65,7 +65,7 @@ export const predictRatingIntervals = (
 
   const elapsedDays = computeElapsedDays(card, reviewTime);
 
-  for (const rating of [Rating.AGAIN, Rating.HARD, Rating.GOOD, Rating.EASY]) {
+  for (const rating of [Rating.Again, Rating.Hard, Rating.Good, Rating.Easy]) {
     const { stability: newStability } = algorithm.stability.updateStability(
       card.difficulty,
       card.stability,

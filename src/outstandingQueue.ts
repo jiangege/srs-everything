@@ -3,34 +3,12 @@ import {
   CardState,
   CardType,
   OutstandingQueueParams,
-  FsrsCard,
+  ItemCard,
 } from "./types.js";
 
-import { algorithm } from "./fsrs/index.js";
 import { mulberry32, hashStringToNumber } from "./utils/rand.js";
-import { endOfDay } from "./utils/dateHelper.js";
-import { computeElapsedDays } from "./utils/cardHelper.js";
-
-export const filterCards = (
-  cards: readonly Card[],
-  state: CardState
-): readonly Card[] => {
-  return cards.filter((card) => card.state === state);
-};
-
-export const calcOddsRatio = (card: FsrsCard, now: number): number => {
-  const elapsedDays = computeElapsedDays(card, now);
-  if (!card.stability) {
-    return 0;
-  }
-  const rCurrent = algorithm.retrievability.forgettingCurve(
-    elapsedDays,
-    card.stability
-  );
-  const rDesired = card.desiredRetention;
-
-  return (1 / rCurrent - 1) / (1 / rDesired - 1) - 1;
-};
+import { endOfDay } from "./utils/date.js";
+import { calcOddsRatio } from "./card.js";
 
 export const sortCards = (
   cards: readonly Card[],
@@ -48,19 +26,16 @@ export const sortCards = (
     maxO = -Infinity;
 
   for (const c of cards) {
-    // ①-A priority
     minP = Math.min(minP, c.priority);
     maxP = Math.max(maxP, c.priority);
 
-    // ①-B oddsRatio（仅 FSRS 卡）
-    if (c.type === CardType.FSRS) {
-      const o = calcOddsRatio(c as FsrsCard, now);
+    if (c.type === CardType.Item) {
+      const o = calcOddsRatio(c as ItemCard, now);
       minO = Math.min(minO, o);
       maxO = Math.max(maxO, o);
     }
   }
   if (minO === Infinity) {
-    // 没有 FSRS 卡
     minO = 0;
     maxO = 1;
   }
@@ -68,80 +43,70 @@ export const sortCards = (
   const rangeO = maxO - minO || 1;
   const oddsWeight = params.oddsWeight ?? 0.5;
 
-  /* ② 计算 score */
   const scored = cards.map((c, idx) => {
-    // ②-A priority ↦ mixPR
     const normP = (c.priority - minP) / rangeP;
     const rand = mulberry32(now ^ hashStringToNumber(c.id))();
     const prW =
-      c.type === CardType.FSRS
+      c.type === CardType.Item
         ? params.itemPriorityRatio
         : params.topicPriorityRatio;
+
+    // 优先级越高，分数越高
     const mixPR =
       prW <= 0 ? rand : prW >= 1 ? normP : prW * normP + (1 - prW) * rand;
 
-    // ②-B oddsRatio ↦ 1-normO（只算一次）
     let score = mixPR;
-    if (c.type === CardType.FSRS) {
-      const o = calcOddsRatio(c as FsrsCard, now);
-      const normO = (o - minO) / rangeO; // 0 … 1（越大说明赔率比值越大）
+    if (c.type === CardType.Item) {
+      const o = calcOddsRatio(c as ItemCard, now);
+      const normO = (o - minO) / rangeO;
 
-      score = oddsWeight * (1 - normO) + (1 - oddsWeight) * mixPR;
+      // 赔值越高，分数越高
+      score = oddsWeight * normO + (1 - oddsWeight) * mixPR;
     }
 
     return { card: c, score, idx };
   });
 
-  const result = scored
+  return scored
     .sort((a, b) => {
       if (a.score !== b.score)
         return sort === "asc" ? a.score - b.score : b.score - a.score;
-      return a.idx - b.idx; // 稳定排序
+      return a.idx - b.idx;
     })
     .map(({ card }) => card);
-
-  return result;
 };
 
-export const generateOutstandingQueue = (
-  cards: readonly Card[],
-  now: number,
+/**
+ * Check if either category is empty and return appropriate queue
+ * Returns [empty array, empty array] if both categories have items
+ */
+const getQueuesIfCategoryEmpty = (
+  items: Card[],
+  topics: Card[],
   params: OutstandingQueueParams
 ): readonly [Card[], Card[]] => {
-  const outstanding: Card[] = [];
-  const postponed: Card[] = [];
+  if (items.length === 0) {
+    // If no items, return all topics up to max limit
+    const outstanding = topics.slice(0, params.maxTopicsPerDay);
+    const postponed = topics.slice(params.maxTopicsPerDay);
+    return [outstanding, postponed];
+  }
+  if (topics.length === 0) {
+    // If no topics, return all items up to max limit
+    const outstanding = items.slice(0, params.maxItemsPerDay);
+    const postponed = items.slice(params.maxItemsPerDay);
+    return [outstanding, postponed];
+  }
 
-  const endToday = endOfDay(now);
+  return [[], []]; // Empty result to indicate no special case handled
+};
 
-  // —— 1. 筛选出今日可候选的卡 —— //
-  const candidates = cards.filter(
-    (c) => c.state === CardState.NEW || (c.due != null && c.due <= endToday)
-  );
-
-  // —— 2. 第一阶段排序：紧急度优先 —— //
-  const baseSorted = sortCards(
-    candidates,
-    now,
-    {
-      itemPriorityRatio: params.itemPriorityRatio,
-      topicPriorityRatio: params.topicPriorityRatio,
-      oddsWeight: params.oddsWeight,
-    },
-    "desc"
-  );
-
-  // —— 3. 拆分 FSRS(item) 与 IR(topic) 两路 —— //
-  const items = baseSorted.filter((c) => c.type === CardType.FSRS);
-  const topics = baseSorted.filter((c) => c.type !== CardType.FSRS);
-
-  // —— 4. 第二阶段合并：按 topicToItemRatio 交叉 —— //
-  const ratio = params.topicToItemRatio;
-
-  // 计算合并节奏，保证 ratio = topicCount / itemCount
-  // 限制极端比例值，防止 quota 过大导致的不平衡
-  const MAX_QUOTA = 10; // 设置合理的最大配额限制
-
-  // 添加安全检查，防止除以零或极小值
+export const interleaveCards = (
+  items: readonly Card[],
+  topics: readonly Card[],
+  ratio: number
+): readonly Card[] => {
+  const MAX_QUOTA = 10;
   const itemsPerTopic =
     ratio <= 0
       ? MAX_QUOTA
@@ -156,70 +121,60 @@ export const generateOutstandingQueue = (
       ? Math.min(MAX_QUOTA, Math.max(1, Math.round(ratio)))
       : 1;
 
-  // 处理任一数组为空的情况
-  if (items.length === 0) {
-    // 如果没有 items，直接返回所有 topics
-    const outstanding = topics.slice(0, params.maxTopicsPerDay);
-    const postponed = topics.slice(params.maxTopicsPerDay);
-    return [outstanding, postponed];
-  }
-  if (topics.length === 0) {
-    // 如果没有 topics，直接返回所有 items
-    const outstanding = items.slice(0, params.maxItemsPerDay);
-    const postponed = items.slice(params.maxItemsPerDay);
-    return [outstanding, postponed];
-  }
-
-  // 基于 topicToItemRatio 确定主要和次要卡片类型
-  // 当 ratio <= 1 时，items 是主要类型，topics 是次要类型
-  // 当 ratio > 1 时，topics 是主要类型，items 是次要类型
+  // Determine primary and secondary card types based on ratio
   const primary = ratio <= 1 ? items : topics;
   const secondary = ratio <= 1 ? topics : items;
-
-  // 确定每组插入的主要类型卡片数量
-  // 当 ratio <= 1 时，使用 itemsPerTopic (每个topic间应插入多少个item)
-  // 当 ratio > 1 时，使用 topicsPerItem (每个item间应插入多少个topic)
   const quota = ratio <= 1 ? itemsPerTopic : topicsPerItem;
 
-  // 用于存储合并后的卡片序列
+  // Merge the two card types
   const merged: Card[] = [];
-  let pi = 0, // 主要类型卡片的当前索引
-    si = 0; // 次要类型卡片的当前索引
+  let pi = 0, // primary index
+    si = 0; // secondary index
 
-  // 使用改进的交叉合并算法
   while (pi < primary.length || si < secondary.length) {
-    // 如果主要类型已用完但次要类型还有剩余，添加所有剩余的次要类型
+    // If primary is exhausted but secondary remains
     if (pi >= primary.length) {
       merged.push(...secondary.slice(si));
       break;
     }
 
-    // 如果次要类型已用完但主要类型还有剩余，添加所有剩余的主要类型
+    // If secondary is exhausted but primary remains
     if (si >= secondary.length) {
       merged.push(...primary.slice(pi));
       break;
     }
 
-    // 正常情况：先插入quota张主要类型的卡片
+    // Normal case: insert quota cards from primary
     const toInsert = Math.min(quota, primary.length - pi);
     for (let cnt = 0; cnt < toInsert; cnt++) {
       merged.push(primary[pi++]);
     }
 
-    // 再插入1张次要类型的卡片
+    // Then insert 1 card from secondary
     if (si < secondary.length) {
       merged.push(secondary[si++]);
     }
   }
 
-  // —— 5. 限额分流 —— //
+  return merged;
+};
+
+/**
+ * Apply daily limits to cards and split into outstanding and postponed queues
+ */
+export const applyDailyLimits = (
+  cards: readonly Card[],
+  params: OutstandingQueueParams
+): readonly [Card[], Card[]] => {
+  const outstanding: Card[] = [];
+  const postponed: Card[] = [];
   const counter = { item: 0, topic: 0, newItem: 0, newTopic: 0 };
 
-  for (const c of merged) {
-    const isItem = c.type === CardType.FSRS;
-    const isNew = c.state === CardState.NEW;
+  for (const c of cards) {
+    const isItem = c.type === CardType.Item;
+    const isNew = c.state === CardState.New;
 
-    // 当日总量 & 当日新卡量
+    // Daily total & new card limits
     const dayCap = isItem ? params.maxItemsPerDay : params.maxTopicsPerDay;
     const newCap = isItem
       ? params.maxNewItemsPerDay
@@ -243,4 +198,52 @@ export const generateOutstandingQueue = (
   }
 
   return [outstanding, postponed];
+};
+
+/**
+ * Generate queues of outstanding and postponed cards
+ */
+export const generateOutstandingQueue = (
+  cards: readonly Card[],
+  now: number,
+  params: OutstandingQueueParams
+): readonly [Card[], Card[]] => {
+  const endToday = endOfDay(now);
+
+  // Step 1: Filter eligible cards for today
+  const candidates = cards.filter(
+    (c) => c.state === CardState.New || (c.due != null && c.due <= endToday)
+  );
+
+  // Step 2: Initial sorting by urgency
+  const baseSorted = sortCards(
+    candidates,
+    now,
+    {
+      itemPriorityRatio: params.itemPriorityRatio,
+      topicPriorityRatio: params.topicPriorityRatio,
+      oddsWeight: params.oddsWeight,
+    },
+    "asc"
+  );
+
+  // Step 3: Split into FSRS (items) and IR (topics)
+  const items = baseSorted.filter((c) => c.type === CardType.Item);
+  const topics = baseSorted.filter((c) => c.type === CardType.Topic);
+
+  // Step 4: Handle special cases (empty categories)
+  const [emptyOutstanding, emptyPostponed] = getQueuesIfCategoryEmpty(
+    items,
+    topics,
+    params
+  );
+  if (emptyOutstanding.length > 0 || emptyPostponed.length > 0) {
+    return [emptyOutstanding, emptyPostponed];
+  }
+
+  // Step 5: Interleave items and topics based on ratio
+  const merged = interleaveCards(items, topics, params.topicToItemRatio);
+
+  // Step 6: Apply daily limits and split into outstanding and postponed
+  return applyDailyLimits(merged, params);
 };

@@ -1,15 +1,8 @@
 export enum Rating {
-  AGAIN = 1,
-  HARD = 2,
-  GOOD = 3,
-  EASY = 4,
-}
-
-export enum CardState {
-  NEW = 0,
-  LEARNING = 1,
-  REVIEW = 2,
-  RELEARNING = 3,
+  Again = 1,
+  Hard = 2,
+  Good = 3,
+  Easy = 4,
 }
 
 export interface ReviewLog {

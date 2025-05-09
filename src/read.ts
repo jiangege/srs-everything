@@ -1,19 +1,19 @@
 import { algorithm, IR_PARAMS } from "./ir/index.js";
-import { IrCard, CardState, ReviewLog } from "./types.js";
+import { TopicCard, CardState, ReviewLog } from "./types.js";
 import { appendReviewLog } from "./reviewLog.js";
 
 export const next = (
-  card: Readonly<IrCard>,
+  card: Readonly<TopicCard>,
   reviewTime: number,
   params: typeof IR_PARAMS = IR_PARAMS,
   log?: Readonly<Partial<ReviewLog>>
-): Readonly<IrCard> => {
+): Readonly<TopicCard> => {
   const newCard = { ...card };
 
-  newCard.state = CardState.LEARNING;
+  newCard.state = CardState.Learning;
 
   const repHistoryCount = card.reviewLogs.filter(
-    (record) => record.state > CardState.NEW
+    (record) => record.state > CardState.New
   ).length;
 
   newCard.scheduledDays = algorithm.nextInterval(repHistoryCount, params);

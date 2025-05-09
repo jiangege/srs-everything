@@ -12,7 +12,7 @@ describe("postpone", () => {
   const createTestCard = (overrides = {}): Card => ({
     id: "test-card-1",
     due: Date.now() + 86400000, // Due tomorrow
-    state: CardState.REVIEW,
+    state: CardState.Review,
     type: CardType.FSRS,
     priority: 1,
     position: 0,

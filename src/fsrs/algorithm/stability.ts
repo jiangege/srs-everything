@@ -38,8 +38,8 @@ export const recallStability = (
   params: readonly number[] = DEFAULT_PARAMS_FSRS5
 ): number => {
   // Apply modifier based on rating (Hard or Easy)
-  const hardPenalty = rating === Rating.HARD ? params[15] : 1;
-  const easyBonus = rating === Rating.EASY ? params[16] : 1;
+  const hardPenalty = rating === Rating.Hard ? params[15] : 1;
+  const easyBonus = rating === Rating.Easy ? params[16] : 1;
 
   // Calculate the increase in stability (SInc)
   // S′_r(D,S,R,G) = S · (e^w8 · (11-D) · S^(-w9) · (e^(w10·(1-R))-1) · hardPenalty · easyBonus + 1)

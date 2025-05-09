@@ -16,6 +16,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/outstandingQueue.test.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

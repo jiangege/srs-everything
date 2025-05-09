@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
-import { addDays, startOfDay, endOfDay } from "./dateHelper.js";
+import { addDays, startOfDay, endOfDay } from "./date.js";
 
 describe("dateHelper", () => {
   describe("addDays", () => {

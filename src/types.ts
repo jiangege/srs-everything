@@ -1,15 +1,15 @@
 import { Rating } from "./fsrs/index.js";
 
 export enum CardType {
-  FSRS = "fsrs",
-  IR = "ir",
+  Topic = "topic",
+  Item = "item",
 }
 
 export enum CardState {
-  NEW = 0,
-  LEARNING = 1,
-  REVIEW = 2,
-  RELEARNING = 3,
+  New = 0,
+  Learning = 1,
+  Review = 2,
+  ReLearning = 3,
 }
 
 export interface BaseCard {
@@ -34,15 +34,15 @@ export interface ReviewLog {
   rating?: Rating;
 }
 
-export interface FsrsCard extends BaseCard {
+export interface ItemCard extends BaseCard {
   difficulty: number;
   stability: number;
   desiredRetention: number;
 }
 
-export interface IrCard extends BaseCard {}
+export interface TopicCard extends BaseCard {}
 
-export type Card = FsrsCard | IrCard;
+export type Card = TopicCard | ItemCard;
 
 export interface OutstandingQueueParams {
   maxNewItemsPerDay: number;

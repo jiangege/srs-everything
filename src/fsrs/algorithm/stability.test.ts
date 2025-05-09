@@ -14,16 +14,16 @@ import { Rating } from "../types";
 describe("initStability", () => {
   test("returns correct initial stability for each rating", () => {
     // 初始稳定性应该直接对应参数数组中的前四个值
-    expect(initStability(Rating.AGAIN)).toBe(DEFAULT_PARAMS_FSRS5[0]);
-    expect(initStability(Rating.HARD)).toBe(DEFAULT_PARAMS_FSRS5[1]);
-    expect(initStability(Rating.GOOD)).toBe(DEFAULT_PARAMS_FSRS5[2]);
-    expect(initStability(Rating.EASY)).toBe(DEFAULT_PARAMS_FSRS5[3]);
+    expect(initStability(Rating.Again)).toBe(DEFAULT_PARAMS_FSRS5[0]);
+    expect(initStability(Rating.Hard)).toBe(DEFAULT_PARAMS_FSRS5[1]);
+    expect(initStability(Rating.Good)).toBe(DEFAULT_PARAMS_FSRS5[2]);
+    expect(initStability(Rating.Easy)).toBe(DEFAULT_PARAMS_FSRS5[3]);
   });
 
   test("constrains values to minimum and maximum stability", () => {
     // 测试如果参数提供的初始稳定性为负数，会被限制到最小稳定性
     const negativeParams = [-1, -1, -1, -1, ...DEFAULT_PARAMS_FSRS5.slice(4)];
-    expect(initStability(Rating.AGAIN, negativeParams)).toBe(0.01);
+    expect(initStability(Rating.Again, negativeParams)).toBe(0.01);
 
     // 测试如果参数提供的初始稳定性超过最大值，会被限制到最大稳定性
     const hugeParams = [
@@ -33,7 +33,7 @@ describe("initStability", () => {
       100000,
       ...DEFAULT_PARAMS_FSRS5.slice(4),
     ];
-    expect(initStability(Rating.AGAIN, hugeParams)).toBe(36500.0);
+    expect(initStability(Rating.Again, hugeParams)).toBe(36500.0);
   });
 });
 
@@ -42,32 +42,32 @@ describe("sameDayStability", () => {
     // 根据公式 S′(S,G) = S · e^(w17 · (G - 3 + w18))
     const stability = 10;
 
-    // 对于 GOOD (G=3)，应该有 S′ = S * exp(w17 * (3-3+w18)) = S * exp(w17 * w18)
+    // 对于 Good (G=3)，应该有 S′ = S * exp(w17 * (3-3+w18)) = S * exp(w17 * w18)
     const expectedGood =
       stability * Math.exp(DEFAULT_PARAMS_FSRS5[17] * DEFAULT_PARAMS_FSRS5[18]);
-    expect(sameDayStability(stability, Rating.GOOD)).toBeCloseTo(expectedGood);
+    expect(sameDayStability(stability, Rating.Good)).toBeCloseTo(expectedGood);
 
-    // 对于 AGAIN (G=1)，应该有 S′ = S * exp(w17 * (1-3+w18)) = S * exp(w17 * (w18-2))
+    // 对于 Again (G=1)，应该有 S′ = S * exp(w17 * (1-3+w18)) = S * exp(w17 * (w18-2))
     const expectedAgain =
       stability *
       Math.exp(DEFAULT_PARAMS_FSRS5[17] * (DEFAULT_PARAMS_FSRS5[18] - 2));
-    expect(sameDayStability(stability, Rating.AGAIN)).toBeCloseTo(
+    expect(sameDayStability(stability, Rating.Again)).toBeCloseTo(
       expectedAgain
     );
 
-    // 对于 EASY (G=4)，应该有 S′ = S * exp(w17 * (4-3+w18)) = S * exp(w17 * (1+w18))
+    // 对于 Easy (G=4)，应该有 S′ = S * exp(w17 * (4-3+w18)) = S * exp(w17 * (1+w18))
     const expectedEasy =
       stability *
       Math.exp(DEFAULT_PARAMS_FSRS5[17] * (1 + DEFAULT_PARAMS_FSRS5[18]));
-    expect(sameDayStability(stability, Rating.EASY)).toBeCloseTo(expectedEasy);
+    expect(sameDayStability(stability, Rating.Easy)).toBeCloseTo(expectedEasy);
   });
 
   test("returns larger stability for higher ratings", () => {
     const stability = 5;
-    const s1 = sameDayStability(stability, Rating.AGAIN);
-    const s2 = sameDayStability(stability, Rating.HARD);
-    const s3 = sameDayStability(stability, Rating.GOOD);
-    const s4 = sameDayStability(stability, Rating.EASY);
+    const s1 = sameDayStability(stability, Rating.Again);
+    const s2 = sameDayStability(stability, Rating.Hard);
+    const s3 = sameDayStability(stability, Rating.Good);
+    const s4 = sameDayStability(stability, Rating.Easy);
 
     expect(s1).toBeLessThan(s2);
     expect(s2).toBeLessThan(s3);
@@ -90,31 +90,31 @@ describe("recallStability", () => {
         (Math.exp(DEFAULT_PARAMS_FSRS5[10] * (1 - retrievability)) - 1) +
       1;
 
-    // 对于 GOOD，应该只使用基础增长因子
+    // 对于 Good，应该只使用基础增长因子
     const expectedGood = stability * baseIncrease;
     expect(
-      recallStability(difficulty, stability, retrievability, Rating.GOOD)
+      recallStability(difficulty, stability, retrievability, Rating.Good)
     ).toBeCloseTo(expectedGood);
 
-    // 对于 HARD，应该乘以 w15 惩罚系数
+    // 对于 Hard，应该乘以 w15 惩罚系数
     const expectedHard =
       stability * (baseIncrease - 1) * DEFAULT_PARAMS_FSRS5[15] + stability;
     expect(
-      recallStability(difficulty, stability, retrievability, Rating.HARD)
+      recallStability(difficulty, stability, retrievability, Rating.Hard)
     ).toBeCloseTo(expectedHard);
 
-    // 对于 EASY，应该乘以 w16 奖励系数
+    // 对于 Easy，应该乘以 w16 奖励系数
     const expectedEasy =
       stability * (baseIncrease - 1) * DEFAULT_PARAMS_FSRS5[16] + stability;
     expect(
-      recallStability(difficulty, stability, retrievability, Rating.EASY)
+      recallStability(difficulty, stability, retrievability, Rating.Easy)
     ).toBeCloseTo(expectedEasy);
   });
 
   test("returns smaller stability increase for harder cards", () => {
     const stability = 10;
     const retrievability = 0.9;
-    const rating = Rating.GOOD;
+    const rating = Rating.Good;
 
     const easyCard = recallStability(1, stability, retrievability, rating);
     const hardCard = recallStability(9, stability, retrievability, rating);
@@ -125,7 +125,7 @@ describe("recallStability", () => {
   test("returns larger stability increase for lower retrievability (spacing effect)", () => {
     const difficulty = 5;
     const stability = 10;
-    const rating = Rating.GOOD;
+    const rating = Rating.Good;
 
     const highR = recallStability(difficulty, stability, 0.9, rating);
     const lowR = recallStability(difficulty, stability, 0.7, rating);
@@ -136,7 +136,7 @@ describe("recallStability", () => {
   test("returns smaller stability increase for higher stability", () => {
     const difficulty = 5;
     const retrievability = 0.9;
-    const rating = Rating.GOOD;
+    const rating = Rating.Good;
 
     const lowS = recallStability(difficulty, 5, retrievability, rating);
     const highS = recallStability(difficulty, 50, retrievability, rating);
@@ -200,20 +200,20 @@ describe("forgetStability", () => {
 
 describe("updateStability", () => {
   test("initializes stability and difficulty for new cards", () => {
-    const result = updateStability(0, 0, 0, Rating.GOOD);
+    const result = updateStability(0, 0, 0, Rating.Good);
     expect(result).toEqual({
       difficulty: expect.any(Number),
       stability: expect.any(Number),
     });
-    expect(result.difficulty).toBe(initDifficulty(Rating.GOOD));
-    expect(result.stability).toBe(initStability(Rating.GOOD));
+    expect(result.difficulty).toBe(initDifficulty(Rating.Good));
+    expect(result.stability).toBe(initStability(Rating.Good));
   });
 
   test("uses sameDayStability for reviews on the same day", () => {
     const difficulty = 5;
     const stability = 10;
     const elapsedDays = 0.5;
-    const rating = Rating.GOOD;
+    const rating = Rating.Good;
 
     const expectedStability = sameDayStability(stability, rating);
     const expectedDifficulty = updateDifficulty(difficulty, rating);
@@ -230,7 +230,7 @@ describe("updateStability", () => {
     const elapsedDays = 5;
 
     // Test for each successful rating
-    for (const rating of [Rating.HARD, Rating.GOOD, Rating.EASY]) {
+    for (const rating of [Rating.Hard, Rating.Good, Rating.Easy]) {
       const retrievability = forgettingCurve(elapsedDays, stability);
       const expectedStability = recallStability(
         difficulty,
@@ -256,7 +256,7 @@ describe("updateStability", () => {
     const difficulty = 5;
     const stability = 10;
     const elapsedDays = 5;
-    const rating = Rating.AGAIN;
+    const rating = Rating.Again;
 
     const retrievability = forgettingCurve(elapsedDays, stability);
     const expectedStability = forgetStability(
@@ -281,25 +281,25 @@ describe("updateStability", () => {
       difficulty,
       stability,
       elapsedDays,
-      Rating.AGAIN
+      Rating.Again
     );
     const resultHard = updateStability(
       difficulty,
       stability,
       elapsedDays,
-      Rating.HARD
+      Rating.Hard
     );
     const resultGood = updateStability(
       difficulty,
       stability,
       elapsedDays,
-      Rating.GOOD
+      Rating.Good
     );
     const resultEasy = updateStability(
       difficulty,
       stability,
       elapsedDays,
-      Rating.EASY
+      Rating.Easy
     );
 
     // Successful recall should result in higher stability than forgetting
@@ -314,7 +314,7 @@ describe("updateStability", () => {
     const difficulty = 5;
     const stability = 10;
     const elapsedDays = 5;
-    const rating = Rating.GOOD;
+    const rating = Rating.Good;
 
     // Create custom parameters by making a copy and modifying some values
     const customParams = [...DEFAULT_PARAMS_FSRS5];

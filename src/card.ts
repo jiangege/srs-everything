@@ -1,64 +1,79 @@
-import { Card, CardType, CardState, IrCard, FsrsCard } from "./types.js";
+import { Card, CardType, CardState, TopicCard, ItemCard } from "./types.js";
 import { applyPriority } from "./priority.js";
 import { appendReviewLog } from "./reviewLog.js";
-import { msToDays } from "./utils/dateHelper.js";
+import { msToDays } from "./utils/date.js";
 import {
   algorithm as fsrsAlgorithm,
   DEFAULT_DESIRED_RETENTION,
 } from "./fsrs/index.js";
 
-export const createCard = (
+export const createCard = <T extends CardType>(
   id: string,
-  type: CardType,
+  type: T,
   priority: number,
   defaultAttrs?: Partial<Card>
-): Readonly<Card> => {
-  let newCard: Card;
+): Readonly<T extends CardType.Item ? ItemCard : TopicCard> => {
   const baseCard: Partial<Card> = {
     id,
     type,
     due: null,
-    state: CardState.NEW,
+    state: CardState.New,
     scheduledDays: 0,
     lastReview: null,
     postpones: 0,
     reviewLogs: [
       ...appendReviewLog([], {
         id,
-        state: CardState.NEW,
+        state: CardState.New,
         reviewTime: Date.now(),
       }),
     ],
     ...defaultAttrs,
   };
 
+  let newCard: Card = baseCard as Card;
+
   switch (type) {
-    case CardType.FSRS: {
-      const fsrsCard = baseCard as FsrsCard;
-      fsrsCard.difficulty = 0;
-      fsrsCard.stability = 0;
-      newCard = fsrsCard;
-      if (fsrsCard.desiredRetention === undefined) {
-        fsrsCard.desiredRetention = DEFAULT_DESIRED_RETENTION;
+    case CardType.Item: {
+      const itemCard = baseCard as ItemCard;
+      itemCard.difficulty = 0;
+      itemCard.stability = 0;
+      newCard = itemCard;
+      if (itemCard.desiredRetention === undefined) {
+        itemCard.desiredRetention = DEFAULT_DESIRED_RETENTION;
       }
       break;
     }
-    case CardType.IR:
-      newCard = baseCard as IrCard;
+    case CardType.Topic:
+      newCard = baseCard as TopicCard;
       break;
   }
 
-  const updatedCard = applyPriority(newCard, priority);
-  return updatedCard;
+  return applyPriority(newCard, priority) as Readonly<
+    T extends CardType.Item ? ItemCard : TopicCard
+  >;
+};
+
+export const computeElapsedDays = (
+  card: Readonly<Card>,
+  reviewTime: number
+): number => {
+  return card.lastReview ? msToDays(reviewTime - card.lastReview) : 0;
 };
 
 export const computeForgettingCurve = (
-  card: Readonly<FsrsCard>,
+  card: Readonly<ItemCard>,
   now: number
 ): number => {
-  const elapsedDays = card.lastReview ? msToDays(now - card.lastReview) : 0;
-  return fsrsAlgorithm.retrievability.forgettingCurve(
-    elapsedDays,
-    card.stability
-  );
+  const elapsedDays = computeElapsedDays(card, now);
+  const stability = card.stability ?? 0;
+
+  return fsrsAlgorithm.retrievability.forgettingCurve(elapsedDays, stability);
+};
+
+export const calcOddsRatio = (card: ItemCard, now: number): number => {
+  const rCurrent = computeForgettingCurve(card, now);
+  const rDesired = card.desiredRetention ?? 0.9;
+
+  return (1 / rCurrent - 1) / (1 / rDesired - 1) - 1;
 };
