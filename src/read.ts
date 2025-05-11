@@ -6,8 +6,8 @@ import { addDays } from "./utils/date.js";
 export const next = (
   card: Readonly<TopicCard>,
   reviewTime: number,
-  params: typeof IR_PARAMS = IR_PARAMS,
-  log?: Readonly<Partial<ReviewLog>>
+  log?: Readonly<Partial<ReviewLog>>,
+  params: typeof IR_PARAMS = IR_PARAMS
 ): Readonly<TopicCard> => {
   const newCard = { ...card };
 
