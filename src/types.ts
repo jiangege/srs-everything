@@ -24,6 +24,7 @@ export interface BaseCard {
   lastReview: number | null;
   postpones: number;
   reviewLogs: ReviewLog[];
+  maxInterval: number;
 }
 
 export interface ReviewLog {
@@ -45,12 +46,12 @@ export interface TopicCard extends BaseCard {}
 export type Card = TopicCard | ItemCard;
 
 export interface OutstandingQueueParams {
-  maxNewItemsPerDay: number;
-  maxNewTopicsPerDay: number;
+  // maxNewItemsPerDay: number;
+  // maxNewTopicsPerDay: number;
   itemPriorityRatio: number;
   topicPriorityRatio: number;
-  maxItemsPerDay: number;
-  maxTopicsPerDay: number;
-  topicToItemRatio: number;
+  // maxItemsPerDay: number;
+  // maxTopicsPerDay: number;
+  // topicToItemRatio: number;
   oddsWeight: number;
 }

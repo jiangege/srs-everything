@@ -1,7 +1,7 @@
 import { DEFAULT_PARAMS_FSRS5, algorithm, Rating } from "./fsrs/index.js";
 import { ItemCard, CardState, ReviewLog } from "./types.js";
 import { appendReviewLog } from "./reviewLog.js";
-import { computeElapsedDays } from "./card.js";
+import { calcElapsedDays } from "./card.js";
 
 export const grade = (
   card: Readonly<ItemCard>,
@@ -12,7 +12,7 @@ export const grade = (
 ): Readonly<ItemCard> => {
   const newCard = { ...card };
 
-  const elapsedDays = computeElapsedDays(card, reviewTime);
+  const elapsedDays = calcElapsedDays(card, reviewTime);
 
   const { difficulty: newDifficulty, stability: newStability } =
     algorithm.stability.updateStability(
@@ -63,7 +63,7 @@ export const predictRatingIntervals = (
 ): Readonly<Record<Rating, number>> => {
   const result: Partial<Record<Rating, number>> = {};
 
-  const elapsedDays = computeElapsedDays(card, reviewTime);
+  const elapsedDays = calcElapsedDays(card, reviewTime);
 
   for (const rating of [Rating.Again, Rating.Hard, Rating.Good, Rating.Easy]) {
     const { stability: newStability } = algorithm.stability.updateStability(

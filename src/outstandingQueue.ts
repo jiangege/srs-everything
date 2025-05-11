@@ -13,13 +13,10 @@ import { calcOddsRatio } from "./card.js";
 export const sortCards = (
   cards: readonly Card[],
   now: number,
-  params: Pick<
-    OutstandingQueueParams,
-    "itemPriorityRatio" | "topicPriorityRatio" | "oddsWeight"
-  >,
-  sort: "asc" | "desc" = "asc" // ④ 选升/降序，默认升序
+  params: OutstandingQueueParams,
+  sort: "asc" | "desc" = "asc" // ④ Select ascending/descending order, default ascending
 ): readonly Card[] => {
-  /* ① 预扫 priority 与 oddsRatio 的范围 */
+  /* ① Pre-scan priority and oddsRatio ranges */
   let minP = Infinity,
     maxP = -Infinity;
   let minO = Infinity,
@@ -51,7 +48,7 @@ export const sortCards = (
         ? params.itemPriorityRatio
         : params.topicPriorityRatio;
 
-    // 优先级越高，分数越高
+    // Higher priority, higher score
     const mixPR =
       prW <= 0 ? rand : prW >= 1 ? normP : prW * normP + (1 - prW) * rand;
 
@@ -60,7 +57,7 @@ export const sortCards = (
       const o = calcOddsRatio(c as ItemCard, now);
       const normO = (o - minO) / rangeO;
 
-      // 赔值越高，分数越高
+      // Higher odds, higher score
       score = oddsWeight * normO + (1 - oddsWeight) * mixPR;
     }
 
@@ -76,128 +73,95 @@ export const sortCards = (
     .map(({ card }) => card);
 };
 
-/**
- * Check if either category is empty and return appropriate queue
- * Returns [empty array, empty array] if both categories have items
- */
-const getQueuesIfCategoryEmpty = (
-  items: Card[],
-  topics: Card[],
-  params: OutstandingQueueParams
-): readonly [Card[], Card[]] => {
-  if (items.length === 0) {
-    // If no items, return all topics up to max limit
-    const outstanding = topics.slice(0, params.maxTopicsPerDay);
-    const postponed = topics.slice(params.maxTopicsPerDay);
-    return [outstanding, postponed];
-  }
-  if (topics.length === 0) {
-    // If no topics, return all items up to max limit
-    const outstanding = items.slice(0, params.maxItemsPerDay);
-    const postponed = items.slice(params.maxItemsPerDay);
-    return [outstanding, postponed];
-  }
-
-  return [[], []]; // Empty result to indicate no special case handled
-};
-
 export const interleaveCards = (
-  items: readonly Card[],
-  topics: readonly Card[],
+  cards: readonly Card[],
   ratio: number
 ): readonly Card[] => {
-  const MAX_QUOTA = 10;
-  const itemsPerTopic =
-    ratio <= 0
-      ? MAX_QUOTA
-      : ratio <= 1
-      ? Math.min(MAX_QUOTA, Math.max(1, Math.round(1 / ratio)))
-      : 1;
+  if (cards.length <= 1 || ratio < 0) {
+    return cards;
+  }
 
-  const topicsPerItem =
-    ratio <= 0
-      ? 1
-      : ratio > 1
-      ? Math.min(MAX_QUOTA, Math.max(1, Math.round(ratio)))
-      : 1;
+  // Separate cards into Topics and Items, and track which type appears first
+  const topics: Card[] = [];
+  const items: Card[] = [];
+  let firstTopicIdx = -1;
+  let firstItemIdx = -1;
 
-  // Determine primary and secondary card types based on ratio
-  const primary = ratio <= 1 ? items : topics;
-  const secondary = ratio <= 1 ? topics : items;
-  const quota = ratio <= 1 ? itemsPerTopic : topicsPerItem;
-
-  // Merge the two card types
-  const merged: Card[] = [];
-  let pi = 0, // primary index
-    si = 0; // secondary index
-
-  while (pi < primary.length || si < secondary.length) {
-    // If primary is exhausted but secondary remains
-    if (pi >= primary.length) {
-      merged.push(...secondary.slice(si));
-      break;
-    }
-
-    // If secondary is exhausted but primary remains
-    if (si >= secondary.length) {
-      merged.push(...primary.slice(pi));
-      break;
-    }
-
-    // Normal case: insert quota cards from primary
-    const toInsert = Math.min(quota, primary.length - pi);
-    for (let cnt = 0; cnt < toInsert; cnt++) {
-      merged.push(primary[pi++]);
-    }
-
-    // Then insert 1 card from secondary
-    if (si < secondary.length) {
-      merged.push(secondary[si++]);
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    if (card.type === CardType.Topic) {
+      topics.push(card);
+      if (firstTopicIdx === -1) firstTopicIdx = i;
+    } else if (card.type === CardType.Item) {
+      items.push(card);
+      if (firstItemIdx === -1) firstItemIdx = i;
     }
   }
 
-  return merged;
-};
+  // If only one type of card exists, return original cards
+  if (topics.length === 0 || items.length === 0 || ratio === 0) {
+    return cards;
+  }
 
-/**
- * Apply daily limits to cards and split into outstanding and postponed queues
- */
-export const applyDailyLimits = (
-  cards: readonly Card[],
-  params: OutstandingQueueParams
-): readonly [Card[], Card[]] => {
-  const outstanding: Card[] = [];
-  const postponed: Card[] = [];
-  const counter = { item: 0, topic: 0, newItem: 0, newTopic: 0 };
+  const result: Card[] = [];
+  const itemFirst =
+    firstItemIdx !== -1 &&
+    (firstTopicIdx === -1 || firstItemIdx < firstTopicIdx);
+  let t = 0,
+    i = 0;
 
-  for (const c of cards) {
-    const isItem = c.type === CardType.Item;
-    const isNew = c.state === CardState.New;
+  // Handle first element (if item appears first)
+  if (itemFirst) {
+    const initialItems =
+      ratio >= 1
+        ? Math.min(Math.round(ratio), items.length) // For ratio >= 1, add ratio items
+        : 1; // For ratio < 1, add 1 item
 
-    // Daily total & new card limits
-    const dayCap = isItem ? params.maxItemsPerDay : params.maxTopicsPerDay;
-    const newCap = isItem
-      ? params.maxNewItemsPerDay
-      : params.maxNewTopicsPerDay;
+    for (let j = 0; j < initialItems && i < items.length; j++) {
+      result.push(items[i++]);
+    }
+  }
 
-    const used = isItem ? counter.item : counter.topic;
-    const usedNew = isItem ? counter.newItem : counter.newTopic;
+  // Main loop: interleave cards according to ratio
+  if (ratio >= 1) {
+    // ratio≥1: Each topic is followed by ratio items
+    const itemsPerTopic = Math.round(ratio);
 
-    if (used < dayCap && (!isNew || usedNew < newCap)) {
-      outstanding.push(c);
-      if (isItem) {
-        counter.item++;
-        if (isNew) counter.newItem++;
-      } else {
-        counter.topic++;
-        if (isNew) counter.newTopic++;
+    while (t < topics.length) {
+      // Add 1 topic
+      result.push(topics[t++]);
+
+      // Add itemsPerTopic items
+      for (let j = 0; j < itemsPerTopic && i < items.length; j++) {
+        result.push(items[i++]);
       }
-    } else {
-      postponed.push(c);
+    }
+  } else {
+    // ratio<1: Every 1/ratio topics are followed by 1 item
+    const topicsPerItem = Math.round(1 / ratio);
+
+    while (t < topics.length && i < items.length) {
+      // Add topicsPerItem topics
+      const topicsToAdd = Math.min(topicsPerItem, topics.length - t);
+      for (let j = 0; j < topicsToAdd; j++) {
+        result.push(topics[t++]);
+      }
+
+      // Add 1 item
+      result.push(items[i++]);
     }
   }
 
-  return [outstanding, postponed];
+  // Add remaining cards
+  while (t < topics.length) {
+    result.push(topics[t++]);
+  }
+
+  while (i < items.length) {
+    result.push(items[i++]);
+  }
+
+  return result;
 };
 
 /**
@@ -207,43 +171,11 @@ export const generateOutstandingQueue = (
   cards: readonly Card[],
   now: number,
   params: OutstandingQueueParams
-): readonly [Card[], Card[]] => {
+): readonly Card[] => {
   const endToday = endOfDay(now);
-
-  // Step 1: Filter eligible cards for today
   const candidates = cards.filter(
     (c) => c.state === CardState.New || (c.due != null && c.due <= endToday)
   );
 
-  // Step 2: Initial sorting by urgency
-  const baseSorted = sortCards(
-    candidates,
-    now,
-    {
-      itemPriorityRatio: params.itemPriorityRatio,
-      topicPriorityRatio: params.topicPriorityRatio,
-      oddsWeight: params.oddsWeight,
-    },
-    "asc"
-  );
-
-  // Step 3: Split into FSRS (items) and IR (topics)
-  const items = baseSorted.filter((c) => c.type === CardType.Item);
-  const topics = baseSorted.filter((c) => c.type === CardType.Topic);
-
-  // Step 4: Handle special cases (empty categories)
-  const [emptyOutstanding, emptyPostponed] = getQueuesIfCategoryEmpty(
-    items,
-    topics,
-    params
-  );
-  if (emptyOutstanding.length > 0 || emptyPostponed.length > 0) {
-    return [emptyOutstanding, emptyPostponed];
-  }
-
-  // Step 5: Interleave items and topics based on ratio
-  const merged = interleaveCards(items, topics, params.topicToItemRatio);
-
-  // Step 6: Apply daily limits and split into outstanding and postponed
-  return applyDailyLimits(merged, params);
+  return sortCards(candidates, now, params, "asc");
 };

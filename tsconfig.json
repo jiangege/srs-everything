@@ -16,6 +16,13 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*", "src/outstandingQueue.test.ts"],
+  "include": [
+    "src/**/*",
+    "src/outstandingQueue.test.ts",
+    "test/fsrs/difficulty.test.ts",
+    "test/fsrs/retrievability.test.ts",
+    "test/fsrs/stability.test.ts",
+    "test/postpone.test.ts"
+  ],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

@@ -9,14 +9,17 @@ export {
 
 export { IR_PARAMS } from "./ir/index.js";
 
-export { generateOutstandingQueue } from "./outstandingQueue.js";
+export {
+  generateOutstandingQueue,
+  interleaveCards,
+} from "./outstandingQueue.js";
 
 export { grade, predictRatingIntervals } from "./grade.js";
 
-export { createCard } from "./card.js";
+export { createCard, calcForgettingCurve, calcOddsRatio } from "./card.js";
 
 export { appendReviewLog, withoutReviewLog } from "./reviewLog.js";
 
 export { next } from "./read.js";
 
-export { postpone } from "./postpone.js";
+export { postpone, filterSafePostponableCards } from "./postpone.js";
