@@ -23,3 +23,5 @@ export { appendReviewLog, withoutReviewLog } from "./reviewLog.js";
 export { next } from "./read.js";
 
 export { postpone, filterSafePostponableCards } from "./postpone.js";
+
+export { applyPriority } from "./priority.js";
