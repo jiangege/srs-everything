@@ -13,6 +13,7 @@ export const createCard = <T extends CardType>(
   id: string,
   type: T,
   priority: number,
+  now: number,
   defaultAttrs?: Partial<Card>
 ): Readonly<T extends CardType.Item ? ItemCard : TopicCard> => {
   const baseCard: Partial<Card> = {
@@ -28,7 +29,7 @@ export const createCard = <T extends CardType>(
       ...appendReviewLog([], {
         id,
         state: CardState.New,
-        reviewTime: Date.now(),
+        reviewTime: now,
       }),
     ],
     ...defaultAttrs,

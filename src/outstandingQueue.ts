@@ -16,58 +16,38 @@ export const sortCards = (
   params: OutstandingQueueParams,
   sort: "asc" | "desc" = "asc" // ④ Select ascending/descending order, default ascending
 ): readonly Card[] => {
-  /* ① Pre-scan priority and oddsRatio ranges */
-  let minP = Infinity,
-    maxP = -Infinity;
-  let minO = Infinity,
-    maxO = -Infinity;
-
-  for (const c of cards) {
-    minP = Math.min(minP, c.priority);
-    maxP = Math.max(maxP, c.priority);
-
-    if (c.type === CardType.Item) {
-      const o = calcOddsRatio(c as ItemCard, now);
-      minO = Math.min(minO, o);
-      maxO = Math.max(maxO, o);
-    }
-  }
-  if (minO === Infinity) {
-    minO = 0;
-    maxO = 1;
-  }
-  const rangeP = maxP - minP || 1;
-  const rangeO = maxO - minO || 1;
-  const oddsWeight = params.oddsWeight ?? 0.5;
-
-  const scored = cards.map((c, idx) => {
-    const normP = (c.priority - minP) / rangeP;
+  const scoredCards = cards.map((c, idx) => {
+    const normP = c.priority / 100;
     const rand = mulberry32(now ^ hashStringToNumber(c.id))();
-    const prW =
+    const pWeight =
       c.type === CardType.Item
         ? params.itemPriorityRatio
         : params.topicPriorityRatio;
-
-    // Higher priority, higher score
-    const mixPR =
-      prW <= 0 ? rand : prW >= 1 ? normP : prW * normP + (1 - prW) * rand;
-
-    let score = mixPR;
-    if (c.type === CardType.Item) {
+    const baseScore = pWeight * normP + (1 - pWeight) * rand;
+    if (c.type === CardType.Item && c.state !== CardState.New) {
       const o = calcOddsRatio(c as ItemCard, now);
-      const normO = (o - minO) / rangeO;
-
-      // Higher odds, higher score
-      score = oddsWeight * normO + (1 - oddsWeight) * mixPR;
+      const normO = (-o / (1 + Math.abs(o)) + 1) / 2 / 0.75;
+      const finalScore =
+        (1 - params.oddsWeight) * baseScore + params.oddsWeight * normO;
+      return {
+        card: c,
+        score: finalScore,
+        idx,
+      };
+    } else {
+      return {
+        card: c,
+        score: baseScore,
+        idx,
+      };
     }
-
-    return { card: c, score, idx };
   });
 
-  return scored
+  return scoredCards
     .sort((a, b) => {
-      if (a.score !== b.score)
+      if (a.score !== b.score) {
         return sort === "asc" ? a.score - b.score : b.score - a.score;
+      }
       return a.idx - b.idx;
     })
     .map(({ card }) => card);
@@ -77,89 +57,41 @@ export const interleaveCards = (
   cards: readonly Card[],
   ratio: number
 ): readonly Card[] => {
-  if (cards.length <= 1 || ratio < 0) {
-    return cards;
-  }
+  if (cards.length <= 1 || ratio <= 0) return cards;
 
-  // Separate cards into Topics and Items, and track which type appears first
   const topics: Card[] = [];
   const items: Card[] = [];
-  let firstTopicIdx = -1;
-  let firstItemIdx = -1;
+  let itemFirst = false;
 
-  for (let i = 0; i < cards.length; i++) {
-    const card = cards[i];
-    if (card.type === CardType.Topic) {
-      topics.push(card);
-      if (firstTopicIdx === -1) firstTopicIdx = i;
-    } else if (card.type === CardType.Item) {
-      items.push(card);
-      if (firstItemIdx === -1) firstItemIdx = i;
+  for (const c of cards) {
+    if (c.type === CardType.Topic) {
+      topics.push(c);
+    } else if (c.type === CardType.Item) {
+      items.push(c);
+      if (topics.length === 0 && items.length === 1) itemFirst = true;
     }
   }
 
-  // If only one type of card exists, return original cards
-  if (topics.length === 0 || items.length === 0 || ratio === 0) {
-    return cards;
-  }
+  if (topics.length === 0 || items.length === 0) return cards;
 
   const result: Card[] = [];
-  const itemFirst =
-    firstItemIdx !== -1 &&
-    (firstTopicIdx === -1 || firstItemIdx < firstTopicIdx);
   let t = 0,
     i = 0;
 
-  // Handle first element (if item appears first)
-  if (itemFirst) {
-    const initialItems =
-      ratio >= 1
-        ? Math.min(Math.round(ratio), items.length) // For ratio >= 1, add ratio items
-        : 1; // For ratio < 1, add 1 item
+  let debt = itemFirst ? ratio : 0;
 
-    for (let j = 0; j < initialItems && i < items.length; j++) {
-      result.push(items[i++]);
-    }
-  }
-
-  // Main loop: interleave cards according to ratio
-  if (ratio >= 1) {
-    // ratio≥1: Each topic is followed by ratio items
-    const itemsPerTopic = Math.round(ratio);
-
-    while (t < topics.length) {
-      // Add 1 topic
+  while (t < topics.length && i < items.length) {
+    if (debt <= 0) {
       result.push(topics[t++]);
-
-      // Add itemsPerTopic items
-      for (let j = 0; j < itemsPerTopic && i < items.length; j++) {
-        result.push(items[i++]);
-      }
-    }
-  } else {
-    // ratio<1: Every 1/ratio topics are followed by 1 item
-    const topicsPerItem = Math.round(1 / ratio);
-
-    while (t < topics.length && i < items.length) {
-      // Add topicsPerItem topics
-      const topicsToAdd = Math.min(topicsPerItem, topics.length - t);
-      for (let j = 0; j < topicsToAdd; j++) {
-        result.push(topics[t++]);
-      }
-
-      // Add 1 item
+      debt += 1;
+    } else if (debt > 0) {
       result.push(items[i++]);
+      debt -= ratio;
     }
   }
 
-  // Add remaining cards
-  while (t < topics.length) {
-    result.push(topics[t++]);
-  }
-
-  while (i < items.length) {
-    result.push(items[i++]);
-  }
+  while (t < topics.length) result.push(topics[t++]);
+  while (i < items.length) result.push(items[i++]);
 
   return result;
 };

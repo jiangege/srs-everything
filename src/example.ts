@@ -12,40 +12,33 @@ import {
   next,
   interleaveCards,
 } from "./index.js";
+import { sortCards } from "./outstandingQueue.js";
 
 const now = Date.now();
 
-const card = grade(createCard("1", CardType.Item, 50), Rating.Easy, now);
-const dueCard = { ...card, due: now, stability: 10 };
+const cards = [];
 
-const card2 = createCard("2", CardType.Topic, 50);
-const dueCard2 = { ...card2, due: now, stability: 10, lastReview: now };
+for (let i = 0; i < 5; i++) {
+  cards.push(createCard(`${i}`, CardType.Topic, 10, now));
+  cards.push(createCard(`${i}`, CardType.Item, 10, now));
+}
 
-const card3 = createCard("3", CardType.Item, 40);
-const dueCard3 = { ...card3, due: now, stability: 10 };
+// console.log(
+//   sortCards([card, card2, card3], now, {
+//     itemPriorityRatio: 0.5,
+//     topicPriorityRatio: 1,
+//     oddsWeight: 0.8,
+//   }).map((c) => c.id)
+// );
 
-const card4 = createCard("4", CardType.Topic, 60);
-const dueCard4 = { ...card4, due: now, stability: 10, lastReview: now };
+console.log(interleaveCards(cards, 0.5).map((c) => c.type));
 
-const outstandingQueue = generateOutstandingQueue(
-  [dueCard, dueCard2, dueCard3, dueCard4],
-  now,
-  {
-    itemPriorityRatio: 0.8,
-    topicPriorityRatio: 0.8,
-    oddsWeight: 0.8,
-  }
-);
+// console.log(calcOddsRatio(card, card.due! + 1000 * 60 * 60 * 24 * 30));
 
-console.log(
-  "generateOutstandingQueue",
-  outstandingQueue.map((c) => c.id)
-);
-
-console.log(
-  "interleaveCards",
-  interleaveCards(outstandingQueue, 1).map((c) => c.id)
-);
+// console.log(
+//   "interleaveCards",
+//   interleaveCards(outstandingQueue, 0.5).map((c) => c.id)
+// );
 
 // console.log(filterSafePostponableCards(outstandingQueue, now));
 
