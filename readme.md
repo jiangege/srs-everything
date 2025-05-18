@@ -113,18 +113,10 @@ import {
 const now = Date.now();
 
 // Create and grade some cards
-const card1 = createCard("1", CardType.Item, 50);
-const gradedCard1 = grade(card1, Rating.Easy, now);
-const dueCard1 = { ...gradedCard1, due: now, stability: 10 };
-
-const card2 = createCard("2", CardType.Topic, 50);
-const dueCard2 = { ...card2, due: now, stability: 10, lastReview: now };
-
-const card3 = createCard("3", CardType.Item, 40);
-const dueCard3 = { ...card3, due: now, stability: 10 };
-
-const card4 = createCard("4", CardType.Topic, 60);
-const dueCard4 = { ...card4, due: now, stability: 10, lastReview: now };
+const card1 = createCard("1", CardType.Item, 50, now);
+const card2 = createCard("2", CardType.Topic, 50, now);
+const card3 = createCard("3", CardType.Item, 40, now);
+const card4 = createCard("4", CardType.Topic, 60, now);
 
 // Generate a queue of cards due for review
 const outstandingQueue = generateOutstandingQueue(
@@ -149,7 +141,7 @@ for (const card of interleavedCards) {
 
   // Updated card with new scheduling information
   const updatedCard = result.card;
-  console.log(`Card ${updatedCard.id} next due:`, new Date(result.nextDue));
+  console.log(`Card ${updatedCard.id} next due:`, new Date(result.due));
 }
 ```
 

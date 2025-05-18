@@ -7,7 +7,7 @@ import {
   DEFAULT_DESIRED_RETENTION,
 } from "./fsrs/index.js";
 
-export const DEFAULT_MAX_INTERVAL = 1000 * 60 * 60 * 24 * 1000;
+export const DEFAULT_MAX_INTERVAL = 1000;
 
 export const createCard = <T extends CardType>(
   id: string,
