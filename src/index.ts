@@ -1,5 +1,11 @@
 export { CardType, CardState } from "./types.js";
-export type { ItemCard, TopicCard } from "./types.js";
+export type {
+  Card,
+  ItemCard,
+  TopicCard,
+  ReviewLog,
+  OutstandingQueueParams,
+} from "./types.js";
 
 export {
   Rating,
