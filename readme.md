@@ -14,15 +14,15 @@ npm install srs-everything
 import { createCard, grade, Rating, CardType } from "srs-everything";
 
 // Create cards
-const card = createCard("1", CardType.Item, 50); // id, type, initial priority
+const now = Date.now();
+const card = createCard("1", CardType.Item, 50, now); // id, type, priority, now
 
 // Grade a review
-const now = Date.now();
-const result = grade(card, Rating.Good, now);
+const reviewedCard = grade(card, Rating.Good, now);
 
 // Get updated card and next due date
-console.log(`Next review: ${new Date(result.nextDue)}`);
-console.log(`New stability: ${result.card.stability}`);
+console.log(`Next review: ${new Date(reviewedCard.due!)}`);
+console.log(`New stability: ${reviewedCard.stability}`);
 ```
 
 ## Features
@@ -55,8 +55,8 @@ import { createCard, CardType, CardState } from "srs-everything";
 #### Functions
 
 - `createCard(options)`: Create a new card
-- `calcForgettingCurve(card)`: Calculate forgetting curve for a card
-- `calcOddsRatio(card)`: Calculate odds ratio for a card
+- `calcForgettingCurve(card, now)`: Calculate forgetting curve for a card
+- `calcOddsRatio(card, now)`: Calculate odds ratio for a card
 
 ### Grading and Rating
 
@@ -120,7 +120,7 @@ const card4 = createCard("4", CardType.Topic, 60, now);
 
 // Generate a queue of cards due for review
 const outstandingQueue = generateOutstandingQueue(
-  [dueCard1, dueCard2, dueCard3, dueCard4],
+  [card1, card2, card3, card4],
   now,
   {
     itemPriorityRatio: 0.8,
@@ -137,11 +137,10 @@ for (const card of interleavedCards) {
   // Present card to user...
 
   // Then process user's rating
-  const result = grade(card, Rating.Good, Date.now());
+  const updatedCard = grade(card, Rating.Good, Date.now());
 
   // Updated card with new scheduling information
-  const updatedCard = result.card;
-  console.log(`Card ${updatedCard.id} next due:`, new Date(result.due));
+  console.log(`Card ${updatedCard.id} next due:`, new Date(updatedCard.due!));
 }
 ```
 
