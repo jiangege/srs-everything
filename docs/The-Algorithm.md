@@ -17,19 +17,19 @@ In case you find this article difficult to understand, perhaps you will like thi
   - $3$: `good`
   - $4$: `easy`
 
-# FSRS-5
+# FSRS-6
 
 ## Default parameters
 
 ```python
-[0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604, 0.0046, 1.54575, 0.1192, 1.01925, 1.9395, 0.11, 0.29605, 2.2698, 0.2315, 2.9898, 0.51655, 0.6621]
+[0.2172, 1.1771, 3.2602, 16.1507, 7.0114, 0.57, 2.0966, 0.0069, 1.5261, 0.112, 1.0178, 1.849, 0.1133, 0.3127, 2.2934, 0.2191, 3.0004, 0.7536, 0.3332, 0.1437, 0.2]
 ```
 
 ## Formula
 
 The stability after a same-day review:
 
-$$S^\prime(S,G) = S \cdot e^{w_{17} \cdot (G - 3 + w_{18})}$$
+$$S^\prime(S,G) = S \cdot e^{w_{17} \cdot (G - 3 + w_{18})} \cdot S^{-w_{19}}$$
 
 ***
 
@@ -65,25 +65,15 @@ The other formulas are the same as FSRS-4.5.
 
 ## Formula
 
-The formula of forgetting curve is changed in this update.
+The forgetting curve has a trainable decay factor:
 
-The retrievability after $t$ days since the last review:
+$$R(t,S) = \left(1 + factor \cdot \cfrac{t}{S}\right)^{-w_{20}},$$
 
-$$R(t,S) = \left(1 + FACTOR \cdot \cfrac{t}{S}\right)^{DECAY},$$
-
-where $R(t,S)=0.9$ when $t=S$.
+where $$factor = 0.9^{-\cfrac{1}{w_{20}}} - 1$$ so that $$R(S,S)=90\%.$$
 
 The next interval can be calculated by solving for $t$ in the above equation after putting the request retention in place of $R$:
 
-$$I(r,S) = \cfrac{S}{FACTOR} \cdot \left(r^\cfrac{1}{DECAY} - 1\right),$$
-
-where $I(r,S)=S$ when $r=0.9$.
-
-In FSRS v4, $DECAY=-1$ and $FACTOR=\cfrac{1}{9}$
-
-In FSRS-4.5, $DECAY=-0.5$ and $FACTOR=\cfrac{19}{81}$
-
-The new forgetting curve drops sharply before $S$ and flatly after $S$.
+$$I(r,S) = \cfrac{S}{factor} \cdot \left(r^{-\cfrac{1}{w_{20}}} - 1\right).$$
 
 # FSRS v4
 

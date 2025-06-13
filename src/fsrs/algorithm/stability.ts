@@ -3,7 +3,7 @@ import { initDifficulty, updateDifficulty } from "./difficulty.js";
 import { forgettingCurve } from "./retrievability.js";
 
 import {
-  DEFAULT_PARAMS_FSRS5,
+  DEFAULT_PARAMS_FSRS6,
   MIN_STABILITY,
   MAX_STABILITY,
 } from "../const.js";
@@ -13,7 +13,7 @@ const constrainStability = (stability: number): number =>
 
 export const initStability = (
   rating: Rating,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): number => {
   // In FSRS, the initial stability is directly taken from the parameters w[0] to w[3]
   // based on the rating value (1-indexed)
@@ -23,11 +23,12 @@ export const initStability = (
 export const sameDayStability = (
   stability: number,
   rating: Rating,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): number => {
-  // S′(S,G) = S · e^(w17 · (G - 3 + w18))
+  // S′(S,G) = S · e^(w17 · (G - 3 + w18)) · S^{-w19}
   const exponent = params[17] * (rating - 3 + params[18]);
-  return constrainStability(stability * Math.exp(exponent));
+  const sInc = Math.exp(exponent) * Math.pow(stability, -params[19]);
+  return constrainStability(stability * sInc);
 };
 
 export const recallStability = (
@@ -35,7 +36,7 @@ export const recallStability = (
   stability: number,
   retrievability: number,
   rating: Rating,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): number => {
   // Apply modifier based on rating (Hard or Easy)
   const hardPenalty = rating === Rating.Hard ? params[15] : 1;
@@ -66,7 +67,7 @@ export const forgetStability = (
   difficulty: number,
   stability: number,
   retrievability: number,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): number => {
   // S′_f(D,S,R) = w11 · D^(-w12) · ((S+1)^w13 - 1) · e^(w14·(1-R))
   const difficultyTerm = Math.pow(difficulty, -params[12]);
@@ -83,7 +84,7 @@ export const updateStability = (
   stability: number,
   elapsedDays: number,
   rating: Rating,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): Readonly<{ difficulty: number; stability: number }> => {
   if (!difficulty || !stability) {
     return {
@@ -92,7 +93,7 @@ export const updateStability = (
     };
   }
 
-  const retrievability = forgettingCurve(elapsedDays, stability);
+  const retrievability = forgettingCurve(elapsedDays, stability, params);
 
   const newDifficulty = updateDifficulty(difficulty, rating, params);
 

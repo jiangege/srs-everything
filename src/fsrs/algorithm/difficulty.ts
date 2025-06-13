@@ -1,6 +1,6 @@
 import { Rating } from "../types.js";
 import {
-  DEFAULT_PARAMS_FSRS5,
+  DEFAULT_PARAMS_FSRS6,
   MAX_DIFFICULTY,
   MIN_DIFFICULTY,
 } from "../const.js";
@@ -10,7 +10,7 @@ const constrainDifficulty = (difficulty: number): number =>
 
 export const initDifficulty = (
   rating: Rating,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): number => {
   // 计算初始难度 D₀(G) = w4 - exp( w5 * (G - 1) ) + 1
   const exponent = params[5] * (rating - 1);
@@ -20,7 +20,7 @@ export const initDifficulty = (
 export const updateDifficulty = (
   difficulty: number,
   rating: Rating,
-  params: readonly number[] = DEFAULT_PARAMS_FSRS5
+  params: readonly number[] = DEFAULT_PARAMS_FSRS6
 ): number => {
   // 计算线性阻尼：ΔD = -w6 * (G - 3)
   const deltaD = -params[6] * (rating - 3);

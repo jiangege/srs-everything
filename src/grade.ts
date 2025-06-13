@@ -1,4 +1,4 @@
-import { DEFAULT_PARAMS_FSRS5, algorithm, Rating } from "./fsrs/index.js";
+import { DEFAULT_PARAMS_FSRS6, algorithm, Rating } from "./fsrs/index.js";
 import { ItemCard, CardState, ReviewLog } from "./types.js";
 import { appendReviewLog } from "./reviewLog.js";
 import { calcElapsedDays } from "./card.js";
@@ -8,7 +8,7 @@ export const grade = (
   rating: Rating,
   reviewTime: number,
   log?: Readonly<Partial<ReviewLog>>,
-  params?: typeof DEFAULT_PARAMS_FSRS5
+  params?: typeof DEFAULT_PARAMS_FSRS6
 ): Readonly<ItemCard> => {
   const newCard = { ...card };
 
@@ -59,7 +59,7 @@ export const grade = (
 export const predictRatingIntervals = (
   card: ItemCard,
   reviewTime: number,
-  params?: typeof DEFAULT_PARAMS_FSRS5
+  params?: typeof DEFAULT_PARAMS_FSRS6
 ): Readonly<Record<Rating, number>> => {
   const result: Partial<Record<Rating, number>> = {};
 
