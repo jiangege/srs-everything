@@ -9,7 +9,7 @@ export type {
 
 export {
   Rating,
-  DEFAULT_PARAMS_FSRS5,
+  DEFAULT_PARAMS_FSRS6,
   DEFAULT_DESIRED_RETENTION,
 } from "./fsrs/index.js";
 
