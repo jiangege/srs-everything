@@ -54,9 +54,17 @@ import { createCard, CardType, CardState } from "srs-everything";
 
 #### Functions
 
-- `createCard(options)`: Create a new card
-- `calcForgettingCurve(card, now)`: Calculate forgetting curve for a card
-- `calcOddsRatio(card, now)`: Calculate odds ratio for a card
+- `createCard(id, type, priority, now, defaultAttrs?)`  
+  Create a card of the specified `CardType`. `priority` should be between `0` and
+  `100` and controls ordering in the review queue. `now` is the creation
+  timestamp. Optional `defaultAttrs` lets you override default fields. The
+  returned value is a read-only `ItemCard` or `TopicCard`.
+- `calcForgettingCurve(card, now)`  
+  Given an `ItemCard` and a timestamp, return the retrieval probability based on
+  its stability value.
+- `calcOddsRatio(card, now)`  
+  Compute the odds of forgetting relative to the card's desired retention. This
+  metric is used when prioritising cards.
 
 ### Grading and Rating
 
@@ -65,8 +73,13 @@ import { grade, Rating, predictRatingIntervals } from "srs-everything";
 ```
 
 - `Rating`: Enum for review ratings (`Rating.Again = 1` | `Rating.Hard = 2` | `Rating.Good = 3` | `Rating.Easy = 4`)
-- `grade(options)`: Process a card review with a rating
-- `predictRatingIntervals(card)`: Predict intervals for different ratings
+- `grade(card, rating, reviewTime, log?, params?)`  
+  Process a review and update card stability/difficulty according to FSRS.
+  Optional `log` fields are merged into the generated review log and `params`
+  allows you to override FSRS parameters. Returns the updated `ItemCard`.
+- `predictRatingIntervals(card, reviewTime, params?)`  
+  Predict the next interval in days for each rating. Returns a mapping from
+  `Rating` values to the predicted interval.
 
 ### Queue Management
 
@@ -74,9 +87,14 @@ import { grade, Rating, predictRatingIntervals } from "srs-everything";
 import { generateOutstandingQueue, interleaveCards } from "srs-everything";
 ```
 
-- `generateOutstandingQueue(cards, now, options)`: Generate a queue of cards due for review
-- `interleaveCards(cards, frequency)`: Interleave different types of cards for study
-- `next(options)`: Get the next card for review
+- `generateOutstandingQueue(cards, now, options)`  
+  Return the cards due by `now` sorted using the provided
+  `OutstandingQueueParams`.
+- `interleaveCards(cards, ratio)`  
+  Mix topic and item cards so roughly `ratio` items appear for each topic.
+- `next(card, reviewTime, log?, params?)`  
+  Schedule the next interval for a `TopicCard` using incremental reading logic
+  and append a review log.
 
 ### Review Logs
 
@@ -84,8 +102,10 @@ import { generateOutstandingQueue, interleaveCards } from "srs-everything";
 import { appendReviewLog, withoutReviewLog } from "srs-everything";
 ```
 
-- `appendReviewLog(card, log)`: Add a review log to a card
-- `withoutReviewLog(card)`: Get card data without review logs
+- `appendReviewLog(reviewLogs, log)`
+  Append a review log entry to an array of logs and return the new array.
+- `withoutReviewLog(reviewLogs, id)`
+  Remove logs matching the card `id` and return the filtered array.
 
 ### Postponing
 
@@ -93,8 +113,21 @@ import { appendReviewLog, withoutReviewLog } from "srs-everything";
 import { postpone, filterSafePostponableCards } from "srs-everything";
 ```
 
-- `postpone(options)`: Postpone reviews to a later date
-- `filterSafePostponableCards(cards)`: Filter cards that can be safely postponed
+- `postpone(cards, now)`
+  Delay the due dates of the provided cards. New scheduled days are calculated
+  with a small random factor.
+- `filterSafePostponableCards(cards, now)`  
+  Filter out cards that have a high chance of being forgotten if postponed.
+
+### Priority
+
+```typescript
+import { applyPriority } from "srs-everything";
+```
+
+- `applyPriority(card, newPriority)`  
+  Assign a priority value between `0` and `100` to a card. A small deterministic
+  jitter is added based on the card id to avoid ties.
 
 ## Complete Example
 
