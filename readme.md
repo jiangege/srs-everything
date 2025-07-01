@@ -1,4 +1,5 @@
 # srs-everything
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 A modern TypeScript implementation of Spaced Repetition Systems (SRS) with support for FSRS (Free Spaced Repetition Scheduler) and various scheduling algorithms. This library helps you build flashcard applications, language learning tools, or any educational software that benefits from spaced repetition.
 
