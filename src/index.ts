@@ -31,3 +31,5 @@ export { next } from "./read.js";
 export { postpone, filterSafePostponableCards } from "./postpone.js";
 
 export { applyPriority } from "./priority.js";
+
+export { setDueDate } from "./schedule.js";
