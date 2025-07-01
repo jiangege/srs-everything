@@ -14,4 +14,20 @@ describe("retrievability", () => {
     const i = nextInterval(0.9, S, DEFAULT_PARAMS_FSRS6);
     expect(i).toBeCloseTo(S, 5);
   });
+
+  test("forgetting curve monotonicity and boundary", () => {
+    const S = 100;
+    const r0 = forgettingCurve(0, S, DEFAULT_PARAMS_FSRS6);
+    const rHalf = forgettingCurve(S / 2, S, DEFAULT_PARAMS_FSRS6);
+    const rFull = forgettingCurve(S, S, DEFAULT_PARAMS_FSRS6);
+    expect(r0).toBeCloseTo(1, 8);
+    expect(rHalf).toBeGreaterThan(rFull);
+    expect(rHalf).toBeLessThan(1);
+  });
+
+  test("next interval respects retention", () => {
+    const S = 100;
+    const i80 = nextInterval(0.8, S, DEFAULT_PARAMS_FSRS6);
+    expect(i80).toBeGreaterThan(S);
+  });
 });
