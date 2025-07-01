@@ -185,6 +185,14 @@ for (const card of interleavedCards) {
 - Knowledge retention systems
 - Personalized learning platforms
 
+## API Documentation
+
+A complete list of exported functions and their parameters can be found in [docs/API.md](docs/API.md).
+
+Details for all FSRS and incremental reading parameters are available in
+[docs/Parameters.md](docs/Parameters.md).
+
+
 ## License
 
 MIT
