@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
-import { addDays, startOfDay, endOfDay } from "./date.js";
+import { addDays, startOfDay, endOfDay, msToDays, daysToMs } from "./date.js";
 
 describe("dateHelper", () => {
   describe("addDays", () => {
@@ -87,6 +87,14 @@ describe("dateHelper", () => {
 
       // Restore original function
       Date.now = originalDateNow;
+    });
+  });
+
+  describe("msToDays and daysToMs", () => {
+    test("conversion round trip", () => {
+      const ms = 5 * 86_400_000 + 12_345;
+      const days = msToDays(ms);
+      expect(daysToMs(days)).toBeCloseTo(ms, 0);
     });
   });
 });

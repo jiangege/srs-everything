@@ -1,7 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { jitter } from "./rand.js";
-import { seededRandom } from "./rand";
-import { mulberry32 } from "./rand";
+import { jitter, hashStringToNumber, mulberry32 } from "./rand.js";
 
 describe("jitter", () => {
   test("should produce expected hash values for known inputs", () => {
@@ -55,5 +53,19 @@ describe("mulberry32", () => {
     }
 
     expect(allSame).toBe(false);
+  });
+});
+
+describe("hashStringToNumber", () => {
+  test("should return consistent hash", () => {
+    const v1 = hashStringToNumber("hello");
+    const v2 = hashStringToNumber("hello");
+    expect(v1).toBe(v2);
+  });
+
+  test("should produce different hashes for different inputs", () => {
+    const h1 = hashStringToNumber("a");
+    const h2 = hashStringToNumber("b");
+    expect(h1).not.toBe(h2);
   });
 });
