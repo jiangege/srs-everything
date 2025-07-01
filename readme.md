@@ -35,6 +35,7 @@ console.log(`New stability: ${reviewedCard.stability}`);
 - Queue management for outstanding cards
 - Card interleaving strategies
 - Postpone functionality for review scheduling
+- Manual scheduling to set specific due dates
 - Built with modern ES Modules
 
 ## API Reference
@@ -116,8 +117,17 @@ import { postpone, filterSafePostponableCards } from "srs-everything";
 - `postpone(cards, now)`
   Delay the due dates of the provided cards. New scheduled days are calculated
   with a small random factor.
-- `filterSafePostponableCards(cards, now)`  
+- `filterSafePostponableCards(cards, now)`
   Filter out cards that have a high chance of being forgotten if postponed.
+
+### Manual Scheduling
+
+```typescript
+import { setDueDate } from "srs-everything";
+```
+
+- `setDueDate(card, due, now)`
+  Set a specific due time for a card and update its scheduled days accordingly.
 
 ### Priority
 
