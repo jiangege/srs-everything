@@ -9,6 +9,16 @@ A modern TypeScript implementation of Spaced Repetition Systems (SRS) with suppo
 npm install srs-everything
 ```
 
+Both ES Module and CommonJS builds are provided. Use `import` in ESM projects or `require` in CJS:
+
+```typescript
+import { createCard } from "srs-everything";
+```
+
+```javascript
+const { createCard } = require("srs-everything");
+```
+
 ## Quick Start
 
 ```typescript
