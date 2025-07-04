@@ -19,7 +19,7 @@ import { createCard } from "srs-everything";
 const { createCard } = require("srs-everything");
 ```
 
-## Quick Start
+## Quick start
 
 ```typescript
 import { createCard, grade, Rating, CardType } from "srs-everything";
@@ -36,6 +36,33 @@ console.log(`Next review: ${new Date(reviewedCard.due!)}`);
 console.log(`New stability: ${reviewedCard.stability}`);
 ```
 
+## Customizing parameters
+
+You can override the default constants when scheduling cards.
+
+```typescript
+import {
+  grade,
+  Rating,
+  DEFAULT_PARAMS_FSRS6,
+  next,
+  IR_PARAMS,
+  CardType,
+  createCard,
+} from "srs-everything";
+
+const now = Date.now();
+
+const item = createCard("i1", CardType.Item, 50, now);
+const customFSRS = [...DEFAULT_PARAMS_FSRS6];
+customFSRS[8] = 2;
+grade(item, Rating.Good, now, undefined, customFSRS);
+
+const topic = createCard("t1", CardType.Topic, 50, now);
+const customIR = { ...IR_PARAMS, MULTIPLIER: 2 };
+next(topic, now, undefined, customIR);
+```
+
 ## Features
 
 - Full TypeScript support with type declarations
@@ -50,9 +77,9 @@ console.log(`New stability: ${reviewedCard.stability}`);
 - Per-card `maxInterval` to limit overly long review gaps
 - Built with modern ES Modules
 
-## API Reference
+## API reference
 
-### Card Management
+### Card management
 
 ```typescript
 import { createCard, CardType, CardState } from "srs-everything";
@@ -80,40 +107,40 @@ import { createCard, CardType, CardState } from "srs-everything";
   Compute the odds of forgetting relative to the card's desired retention. This
   metric is used when prioritising cards.
 
-### Grading and Rating
+### Grading and rating
 
 ```typescript
 import { grade, Rating, predictRatingIntervals } from "srs-everything";
 ```
 
 - `Rating`: Enum for review ratings (`Rating.Again = 1` | `Rating.Hard = 2` | `Rating.Good = 3` | `Rating.Easy = 4`)
-- `grade(card, rating, reviewTime, log?, params?)`  
-  Process a review and update card stability/difficulty according to FSRS.
-  Optional `log` fields are merged into the generated review log and `params`
-  allows you to override FSRS parameters. Returns the updated `ItemCard`.
-  The calculated interval will not exceed the card's `maxInterval`.
+- `grade(card, rating, reviewTime, log?, params?)`
+  Process a review and update card stability and difficulty according to FSRS.
+  Optional `log` fields are merged into the generated review log.
+  The `params` array defaults to `DEFAULT_PARAMS_FSRS6` and lets you override
+  the 21 FSRS constants. Returns the updated `ItemCard`. The calculated interval
+  will not exceed the card's `maxInterval`.
 - `predictRatingIntervals(card, reviewTime, params?)`
-  Predict the next interval in days for each rating. Returns a mapping from
-  `Rating` values to the predicted interval. Intervals beyond the card's
-  `maxInterval` are capped.
+  Predict the next interval in days for each rating. `params` shares the same
+  array format as `grade`. Intervals beyond the card's `maxInterval` are capped.
 
-### Queue Management
+### Queue management
 
 ```typescript
 import { generateOutstandingQueue, interleaveCards } from "srs-everything";
 ```
 
-- `generateOutstandingQueue(cards, now, options)`  
-  Return the cards due by `now` sorted using the provided
-  `OutstandingQueueParams`.
+- `generateOutstandingQueue(cards, now, options)`
+  Return the cards due by `now` sorted using an `OutstandingQueueParams` object
+  with `itemPriorityRatio`, `topicPriorityRatio` and `oddsWeight` fields.
 - `interleaveCards(cards, ratio)`  
   Mix topic and item cards so roughly `ratio` items appear for each topic.
 - `next(card, reviewTime, log?, params?)`
-  Schedule the next interval for a `TopicCard` using incremental reading logic
-  and append a review log. The resulting interval is capped at the card's
-  `maxInterval`.
+  Schedule the next interval for a `TopicCard` using incremental reading.
+  `params` defaults to `IR_PARAMS` and supports a single `MULTIPLIER` option.
+  The resulting interval is capped at the card's `maxInterval`.
 
-### Review Logs
+### Review logs
 
 ```typescript
 import { appendReviewLog, withoutReviewLog } from "srs-everything";
@@ -136,7 +163,7 @@ import { postpone, filterSafePostponableCards } from "srs-everything";
 - `filterSafePostponableCards(cards, now)`
   Filter out cards that have a high chance of being forgotten if postponed.
 
-### Manual Scheduling
+### Manual scheduling
 
 ```typescript
 import { setDueDate } from "srs-everything";
@@ -155,7 +182,7 @@ import { applyPriority } from "srs-everything";
   Assign a priority value between `0` and `100` to a card. A small deterministic
   jitter is added based on the card id to avoid ties.
 
-## Complete Example
+## Complete example
 
 Here's a complete example of using this library with multiple cards:
 
@@ -203,7 +230,7 @@ for (const card of interleavedCards) {
 }
 ```
 
-## Use Cases
+## Use cases
 
 - Flashcard applications
 - Language learning tools
@@ -211,12 +238,71 @@ for (const card of interleavedCards) {
 - Knowledge retention systems
 - Personalized learning platforms
 
-## API Documentation
+## Parameter reference
 
-A complete list of exported functions and their parameters can be found in [docs/API.md](docs/API.md).
+### FSRS parameters
 
-Details for all FSRS and incremental reading parameters are available in
-[docs/Parameters.md](docs/Parameters.md).
+| Index | Name | Default | Description |
+|------:|------|--------:|-------------|
+| 0 | w0 | 0.2172 | Base stability when the first rating is **Again** |
+| 1 | w1 | 1.1771 | Incremental stability when the first rating increases |
+| 2 | w2 | 3.2602 | Base difficulty when the first rating is **Good** |
+| 3 | w3 | 16.1507 | Slope controlling initial difficulty |
+| 4 | w4 | 7.0114 | Constant used to compute initial difficulty `D₀(G)` |
+| 5 | w5 | 0.57 | Decay factor in `D₀(G)` |
+| 6 | w6 | 2.0966 | Linear damping coefficient `ΔD(G) = -w6*(G-3)` |
+| 7 | w7 | 0.0069 | Mean reversion weight for difficulty |
+| 8 | w8 | 1.5261 | Coefficient in the new stability formula |
+| 9 | w9 | 0.112 | Exponent term used in difficulty and stability updates |
+| 10 | w10 | 1.0178 | Coefficient of `exp(w10*(1-R))` in stability update |
+| 11 | w11 | 1.849 | Factor for difficulty in post-lapse stability |
+| 12 | w12 | 0.1133 | Multiplicative term in post-lapse stability |
+| 13 | w13 | 0.3127 | Exponent of `(S+1)` in post-lapse stability |
+| 14 | w14 | 2.2934 | Coefficient of `exp(w14*(1-R))` in post-lapse stability |
+| 15 | w15 | 0.2191 | Bonus applied when the rating is **Hard** |
+| 16 | w16 | 3.0004 | Bonus applied when the rating is **Easy** |
+| 17 | w17 | 0.7536 | Coefficient for same-day review updates |
+| 18 | w18 | 0.3332 | Constant offset for same-day review updates |
+| 19 | w19 | 0.1437 | Stability exponent adjustment in same-day review |
+| 20 | w20 | 0.2 | Forgetting curve decay factor |
+
+Other constants:
+
+- `MIN_DIFFICULTY`: 1
+- `MAX_DIFFICULTY`: 10
+- `MIN_STABILITY`: 0.01
+- `MAX_STABILITY`: 36500
+- `DEFAULT_DESIRED_RETENTION`: 0.9
+
+### Incremental reading parameters
+
+```ts
+export const IR_PARAMS = {
+  MULTIPLIER: 1.5,
+};
+```
+
+`MULTIPLIER` controls how quickly topic intervals grow. The next interval is computed as:
+
+```
+Math.ceil(MULTIPLIER ** Math.max(repHistoryCount, 1))
+```
+
+where `repHistoryCount` is the number of previous exposures to the topic.
+
+### Outstanding queue parameters
+
+`generateOutstandingQueue` expects an object with three weights:
+
+```ts
+{
+  itemPriorityRatio: number;
+  topicPriorityRatio: number;
+  oddsWeight: number;
+}
+```
+
+All weights should be between `0` and `1` and control how much card priority and forgetting odds influence the queue order.
 
 
 ## License
