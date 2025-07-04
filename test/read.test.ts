@@ -14,7 +14,7 @@ const baseTopic = {
   lastReview: null,
   postpones: 0,
   reviewLogs: [],
-  maxInterval: 0,
+  maxInterval: 1000,
   due: null,
   state: CardState.New,
 } as const;
@@ -28,6 +28,13 @@ describe("read next", () => {
     expect(result.scheduledDays).toBe(3);
     expect(result.due).toBe(123);
     expect(result.reviewLogs.length).toBe(1);
+    vi.restoreAllMocks();
+  });
+
+  test("clamps interval using maxInterval", () => {
+    vi.spyOn(irAlgo, "nextInterval").mockReturnValue(10);
+    const result = next({ ...baseTopic, maxInterval: 5 }, Date.now());
+    expect(result.scheduledDays).toBe(5);
     vi.restoreAllMocks();
   });
 });

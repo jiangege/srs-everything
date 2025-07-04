@@ -36,9 +36,12 @@ export const grade = (
   newCard.difficulty = newDifficulty;
   newCard.stability = newStability;
 
-  newCard.scheduledDays = algorithm.retrievability.nextInterval(
-    card.desiredRetention,
-    newStability
+  newCard.scheduledDays = Math.min(
+    algorithm.retrievability.nextInterval(
+      card.desiredRetention,
+      newStability
+    ),
+    card.maxInterval
   );
 
   newCard.lastReview = reviewTime;
@@ -79,7 +82,7 @@ export const predictRatingIntervals = (
       newStability
     );
 
-    result[rating] = scheduledDays;
+    result[rating] = Math.min(scheduledDays, card.maxInterval);
   }
 
   return result as Record<Rating, number>;
