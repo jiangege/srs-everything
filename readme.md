@@ -132,7 +132,7 @@ import { postpone, filterSafePostponableCards } from "srs-everything";
 
 - `postpone(cards, now)`
   Delay the due dates of the provided cards. New scheduled days are calculated
-  with a small random factor.
+  with a small random factor and will not exceed `maxInterval`.
 - `filterSafePostponableCards(cards, now)`
   Filter out cards that have a high chance of being forgotten if postponed.
 

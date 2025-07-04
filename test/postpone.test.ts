@@ -10,7 +10,6 @@ const baseItem = {
   priority: 0,
   position: 0,
   scheduledDays: 2,
-  maxScheduledDays: 10,
   lastReview: Date.now() - 2 * 86_400_000,
   postpones: 0,
   reviewLogs: [],

@@ -11,7 +11,6 @@ const baseItem = {
   priority: 0,
   position: 0,
   scheduledDays: 1,
-  maxScheduledDays: 10,
   lastReview: Date.now() - 86_400_000,
   postpones: 0,
   reviewLogs: [],
