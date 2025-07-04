@@ -10,7 +10,6 @@ const baseTopic = {
   priority: 0,
   position: 0,
   scheduledDays: 0,
-  maxScheduledDays: 10,
   lastReview: null,
   postpones: 0,
   reviewLogs: [],

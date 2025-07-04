@@ -20,7 +20,6 @@ export interface BaseCard {
   priority: number;
   position: number;
   scheduledDays: number;
-  maxScheduledDays: number;
   lastReview: number | null;
   postpones: number;
   reviewLogs: ReviewLog[];

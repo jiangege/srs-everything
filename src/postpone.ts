@@ -16,7 +16,7 @@ export const postpone = (
 
     const newScheduledDays = Math.min(
       Math.max(1, Math.ceil(scheduledDays * (1.05 + 0.05 * rand)) + delay),
-      card.maxScheduledDays
+      card.maxInterval
     );
 
     return {

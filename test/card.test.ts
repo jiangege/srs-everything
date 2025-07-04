@@ -31,7 +31,6 @@ describe("card helpers", () => {
       priority: 1,
       position: 0,
       scheduledDays: 0,
-      maxScheduledDays: 0,
       lastReview: now - 2 * 86_400_000,
       postpones: 0,
       reviewLogs: [],

@@ -45,7 +45,8 @@ Remove logs for the given card `id`.
 ## Postponing
 
 ### `postpone(cards, now)`
-Delay due dates by applying a small random factor to scheduled days.
+Delay due dates by applying a small random factor to scheduled days. The result
+is clamped by each card's `maxInterval`.
 
 ### `filterSafePostponableCards(cards, now)`
 Return the subset of cards that can be postponed with a low risk of being forgotten.
