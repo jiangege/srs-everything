@@ -47,6 +47,7 @@ console.log(`New stability: ${reviewedCard.stability}`);
 - Card interleaving strategies
 - Postpone functionality for review scheduling
 - Manual scheduling to set specific due dates
+- Per-card `maxInterval` to limit overly long review gaps
 - Built with modern ES Modules
 
 ## API Reference
@@ -66,11 +67,12 @@ import { createCard, CardType, CardState } from "srs-everything";
 
 #### Functions
 
-- `createCard(id, type, priority, now, defaultAttrs?)`  
+- `createCard(id, type, priority, now, defaultAttrs?)`
   Create a card of the specified `CardType`. `priority` should be between `0` and
   `100` and controls ordering in the review queue. `now` is the creation
   timestamp. Optional `defaultAttrs` lets you override default fields. The
-  returned value is a read-only `ItemCard` or `TopicCard`.
+  returned value is a read-only `ItemCard` or `TopicCard`. Each card includes a
+  `maxInterval` property that limits generated intervals.
 - `calcForgettingCurve(card, now)`  
   Given an `ItemCard` and a timestamp, return the retrieval probability based on
   its stability value.
@@ -89,9 +91,11 @@ import { grade, Rating, predictRatingIntervals } from "srs-everything";
   Process a review and update card stability/difficulty according to FSRS.
   Optional `log` fields are merged into the generated review log and `params`
   allows you to override FSRS parameters. Returns the updated `ItemCard`.
-- `predictRatingIntervals(card, reviewTime, params?)`  
+  The calculated interval will not exceed the card's `maxInterval`.
+- `predictRatingIntervals(card, reviewTime, params?)`
   Predict the next interval in days for each rating. Returns a mapping from
-  `Rating` values to the predicted interval.
+  `Rating` values to the predicted interval. Intervals beyond the card's
+  `maxInterval` are capped.
 
 ### Queue Management
 
@@ -104,9 +108,10 @@ import { generateOutstandingQueue, interleaveCards } from "srs-everything";
   `OutstandingQueueParams`.
 - `interleaveCards(cards, ratio)`  
   Mix topic and item cards so roughly `ratio` items appear for each topic.
-- `next(card, reviewTime, log?, params?)`  
+- `next(card, reviewTime, log?, params?)`
   Schedule the next interval for a `TopicCard` using incremental reading logic
-  and append a review log.
+  and append a review log. The resulting interval is capped at the card's
+  `maxInterval`.
 
 ### Review Logs
 

@@ -65,6 +65,18 @@ describe("grade", () => {
     mockUpdate.mockRestore();
     mockNext.mockRestore();
   });
+
+  test("caps scheduled days by maxInterval", () => {
+    const mockUpdate = vi.spyOn(stab, "updateStability").mockReturnValue({
+      difficulty: 2,
+      stability: 3,
+    });
+    const mockNext = vi.spyOn(retr, "nextInterval").mockReturnValue(10);
+    const result = grade({ ...baseItem, maxInterval: 5 }, Rating.Good, Date.now());
+    expect(result.scheduledDays).toBe(5);
+    mockUpdate.mockRestore();
+    mockNext.mockRestore();
+  });
 });
 
 describe("predictRatingIntervals", () => {
@@ -78,6 +90,20 @@ describe("predictRatingIntervals", () => {
     const result = predictRatingIntervals({ ...baseItem }, Date.now());
     expect(result[Rating.Again]).toBe(5);
     expect(result[Rating.Easy]).toBe(5);
+
+    mockUpdate.mockRestore();
+    mockNext.mockRestore();
+  });
+
+  test("interval predictions respect maxInterval", () => {
+    const mockUpdate = vi.spyOn(stab, "updateStability").mockReturnValue({
+      difficulty: 2,
+      stability: 3,
+    });
+    const mockNext = vi.spyOn(retr, "nextInterval").mockReturnValue(10);
+
+    const result = predictRatingIntervals({ ...baseItem, maxInterval: 7 }, Date.now());
+    expect(result[Rating.Good]).toBe(7);
 
     mockUpdate.mockRestore();
     mockNext.mockRestore();

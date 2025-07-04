@@ -17,7 +17,10 @@ export const next = (
     (record) => record.state > CardState.New
   ).length;
 
-  newCard.scheduledDays = algorithm.nextInterval(repHistoryCount, params);
+  newCard.scheduledDays = Math.min(
+    algorithm.nextInterval(repHistoryCount, params),
+    card.maxInterval
+  );
 
   newCard.lastReview = reviewTime;
   newCard.due = addDays(reviewTime, newCard.scheduledDays);
